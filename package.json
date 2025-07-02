@@ -17,11 +17,14 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
     "@mdi/font": "^7.4.47",
+    "animate.css": "^4.1.1",
     "pinia": "^3.0.1",
     "sass": "^1.89.2",
     "sass-loader": "^12.6.0",
     "swiper": "^11.2.8",
+    "three": "^0.177.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vuetify": "^3.8.0-beta.0"

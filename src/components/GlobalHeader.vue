@@ -3,11 +3,7 @@
     <!-- Mobile header -->
     <div class="mobile-header">
       <img :src="logoSrc" alt="Logo" class="mobile-logo" />
-      <button 
-        class="hamburger-btn" 
-        @click="toggleMobileMenu"
-        :class="{ active: mobileMenuOpen }"
-      >
+      <button class="hamburger-btn" @click="toggleMobileMenu" :class="{ active: mobileMenuOpen }">
         <span></span>
         <span></span>
         <span></span>
@@ -20,9 +16,11 @@
       <div class="links-1">
         <router-link to="/">Inicio</router-link>
         <router-link to="/About">Nosotros</router-link>
+        <router-link to="/Products">Catálogo</router-link>
         <router-link to="/contact">Contáctanos</router-link>
+        <router-link to="/store"><img src="@/assets/shop-icon.png" alt=""></router-link>
       </div>
-      
+
     </nav>
 
     <!-- Mobile navigation menu -->
@@ -30,17 +28,15 @@
       <div class="mobile-links">
         <router-link to="/" @click="closeMobileMenu">Inicio</router-link>
         <router-link to="/About" @click="closeMobileMenu">Nosotros</router-link>
+        <router-link to="/Products">Catálogo</router-link>
         <router-link to="/contact" @click="closeMobileMenu">Contáctanos</router-link>
-        
+        <router-link to="/store"><img src="@/assets/shop-icon.png" alt=""></router-link>
+
       </div>
     </nav>
 
     <!-- Mobile menu overlay -->
-    <div 
-      class="mobile-overlay" 
-      :class="{ active: mobileMenuOpen }"
-      @click="closeMobileMenu"
-    ></div>
+    <div class="mobile-overlay" :class="{ active: mobileMenuOpen }" @click="closeMobileMenu"></div>
   </div>
 </template>
 
@@ -63,18 +59,18 @@ export default {
     window.addEventListener('scroll', this.handleScroll);
     window.addEventListener('resize', this.handleResize);
 
-    this.$nextTick(() => {
-      const footer = document.querySelector('footer');
-      if (footer) {
-        this.observer = new IntersectionObserver(
-          ([entry]) => {
-            this.hideHeader = entry.isIntersecting;
-          },
-          { threshold: 0.1 }
-        );
-        this.observer.observe(footer);
-      }
-    });
+    // this.$nextTick(() => {
+    //   const footer = document.querySelector('footer');
+    //   if (footer) {
+    //     this.observer = new IntersectionObserver(
+    //       ([entry]) => {
+    //         this.hideHeader = entry.isIntersecting;
+    //       },
+    //       { threshold: 0.1 }
+    //     );
+    //     this.observer.observe(footer);
+    //   }
+    // });
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
@@ -148,7 +144,7 @@ export default {
 }
 
 .mobile-logo {
-  height: 90px;
+  height: 70px;
 }
 
 /* Desktop navigation */
@@ -258,7 +254,7 @@ export default {
   height: 100%;
 }
 
-.mobile-links > a {
+.mobile-links>a {
   padding: 1rem 0;
   color: var(--text-color);
   text-decoration: none;
@@ -269,13 +265,13 @@ export default {
   transition: color 0.3s ease;
 }
 
-.navMenu.scrolled .mobile-links > a {
+.navMenu.scrolled .mobile-links>a {
   color: var(--main-dark);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.mobile-links > a:hover,
-.mobile-links > a.router-link-active {
+.mobile-links>a:hover,
+.mobile-links>a.router-link-active {
   color: rgb(184, 181, 181);
 }
 
@@ -376,9 +372,11 @@ export default {
 .navbar .links-1 a:hover::after {
   transform: scaleX(1);
 }
+
 /* Color de la línea cuando el fondo es oscuro (modo inicial) */
 .navMenu:not(.scrolled) .navbar .links-1 a::after {
-  background-color: white; /* o el color claro que desees */
+  background-color: white;
+  /* o el color claro que desees */
 }
 
 .navMenu:not(.scrolled) .navbar .links-1 a.router-link-active,
@@ -442,7 +440,7 @@ export default {
 
 
 @media (max-width: 480px) {
-  
+
   .mobile-nav {
     width: 100%;
     right: -100%;

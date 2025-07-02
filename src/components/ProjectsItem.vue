@@ -21,16 +21,18 @@
         </v-carousel-item>
       </v-carousel>
     </v-card>
+    <router-link to="/products" ><span style="color: black;">Ver Más</span></router-link>
   </section>
 </template>
 
 <script setup>
 const images = [
-  new URL('@/assets/carousel-projects/banios.jpg', import.meta.url).href,
-  new URL('@/assets/carousel-projects/banios2.webp', import.meta.url).href,
-  new URL('@/assets/carousel-projects/letreros.jpg', import.meta.url).href,
-   new URL('@/assets/carousel-projects/banios3.webp', import.meta.url).href,
-  
+  new URL('@/assets/banio4.jpg', import.meta.url).href,
+  new URL('@/assets/banios.jpg', import.meta.url).href,
+  new URL('@/assets/banios2.webp', import.meta.url).href,
+  new URL('@/assets/letreros.jpg', import.meta.url).href,
+   new URL('@/assets/banios3.webp', import.meta.url).href,
+  new URL('@/assets/mdf-work-box.jpg', import.meta.url).href,
  
 ]
 </script>

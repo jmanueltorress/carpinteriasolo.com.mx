@@ -70,27 +70,34 @@ import 'swiper/css';
 import 'swiper/css/autoplay';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Autoplay } from 'swiper/modules';
-
+//imgs
+import banios1 from '@/assets/banios1.webp';
+import banios2 from '@/assets/banios2.webp';
+import cosina1 from '@/assets/cosina1.webp';
+import cosina2 from '@/assets/cosina2.webp';
+import recamara1 from '@/assets/recamara1.webp';
+import recamara2 from '@/assets/recamara2.webp';
+import decoracion1 from '@/assets/decoracion1.webp';
 const servicios = [
-  {
+    {
     nombre: 'BAÑOS',
     descripcion: 'Diseño de baños funcionales con acabados modernos.',
-    imagenes: ['/src/assets/carousel-services/banios1.webp', '/src/assets/carousel-services/banios2.webp']
+    imagenes: [banios1, banios2]
   },
   {
     nombre: 'COCINAS',
     descripcion: 'Cocinas personalizadas que combinan estilo y eficiencia.',
-    imagenes: ['/src/assets/carousel-services/cosina1.webp', '/src/assets/carousel-services/cosina2.webp']
+    imagenes: [cosina1, cosina2]
   },
   {
     nombre: 'RECAMARAS',
     descripcion: 'Ambientes acogedores para un descanso perfecto.',
-    imagenes: ['/src/assets/carousel-services/recamara1.webp', '/src/assets/carousel-services/recamara2.webp']
+    imagenes: [recamara1, recamara2]
   },
   {
     nombre: 'DECORACIÓN',
     descripcion: 'Elementos decorativos que transforman tus espacios.',
-    imagenes: ['/src/assets/carousel-services/decoracion1.webp']
+    imagenes: [decoracion1]
   }
 ];
 </script>
