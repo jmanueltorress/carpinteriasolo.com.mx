@@ -2,7 +2,7 @@
   <section class="hero-container">
     <div class="hero-image"></div>
     <div class="hero-content">
-      <h1 class="hero-title">COSINAS Y MUEBLES DE DISEÑO</h1>
+      <h1 class="hero-title">COCINAS Y MUEBLES DE DISEÑO</h1>
       <p class="hero-description">
        En SOLO, transformamos cada pieza de madera en una obra única. Comprometidos con la calidad, la autenticidad y el carácter de cada proyecto.
       </p>

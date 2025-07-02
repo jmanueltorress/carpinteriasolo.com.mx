@@ -220,8 +220,8 @@ const productos = ref([{
   nombre: 'PERSONALIZACIÓN',
   nota: 'Personaliza tu producto con una amplia variedad de colores, acabados y detalles. Adaptamos cada pieza a tu estilo y necesidades, brindando opciones únicas que reflejan tu gusto. Contactanos para mas información.',
   descripcion: 'Personaliza tus ideas',
-  imagen: new URL('@/assets/personalizacion-2.jpg', import.meta.url).href,
-  imagen2: new URL('@/assets/model-none.jpg', import.meta.url).href,
+  imagen: new URL('@/assets/personalizacion-2.webp', import.meta.url).href,
+  imagen2: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: null,
 
@@ -234,8 +234,8 @@ const productos = ref([{
   nombre: 'PERSONALIZACIÓN',
   nota: 'Personaliza tu producto con una amplia variedad de colores, acabados y detalles. Adaptamos cada pieza a tu estilo y necesidades, brindando opciones únicas que reflejan tu gusto. Contactanos para mas información.',
   descripcion: 'Personaliza tus ideas',
-  imagen: new URL('@/assets/personalizacion-1.jpg', import.meta.url).href,
-  imagen2: new URL('@/assets/model-none.jpg', import.meta.url).href,
+  imagen: new URL('@/assets/personalizacion-1.webp', import.meta.url).href,
+  imagen2: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: null,
 
