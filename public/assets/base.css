@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
+@import 'animate.css';
+:root{
+    --main-dark:#000000;
+    --main-light:#ffffff;
+    --nav-bar-fontsz-desktop:14px;
+    --brand:#000000;
+    --text-color:#ffffff;
+    --enfasis-blue:rgb(24,103,192);
+    --enfasis-blue-hover:rgb(107, 171, 245);
+    --global-font-family:'Montserrat', sans-serif;
+}
+body{
+  background: #000000;
+}
+#app{
+font-family: var(--global-font-family);
+
+}
+@media (prefers-color-scheme: dark) {
+  #app {
+    background-color: #ffffff; /* fondo oscuro */
+    color: black;              /* texto claro */
+  }
+}

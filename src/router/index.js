@@ -41,6 +41,17 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/storeView.vue'),
     },
+        // Ruta comodín para errores 404
+     {
+       path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      // route level code-splitting
+      // this generates a separate chunk (About.[hash].js) for this route
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../views/error404View.vue'),
+    },
+    // Ruta comodín para errores 404
+  
   ],
 })
 

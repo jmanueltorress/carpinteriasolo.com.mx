@@ -46,3 +46,22 @@ p {
   }
 }
 </style>
+<!-- estilos--safari nav -->
+ <style scoped>
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    /* Estilos específicos para Safari */
+    .coming-soon {
+      background: linear-gradient(135deg, #333333, #000000);
+    }
+
+    h1 {
+      font-size: 2.4rem;
+    }
+
+    p {
+      font-size: 1.15rem;
+    }
+  }
+}
+</style>

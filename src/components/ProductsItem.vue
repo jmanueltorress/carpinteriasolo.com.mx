@@ -421,7 +421,7 @@ watchEffect(() => {
 .catalogo-container {
   background: white;
   padding: 2rem;
-  font-family: sans-serif;
+
   padding-left: 10rem;
 }
 
@@ -527,7 +527,7 @@ watchEffect(() => {
   position: relative;
   display: inline-block;
   text-align: left;
-  font-family: sans-serif;
+
 }
 
 .menu-button {}
@@ -700,4 +700,67 @@ watchEffect(() => {
 .menu-item:hover {
   background-color: #f3f4f6;
 }
+</style>
+
+<!-- estilos--safari nav -->
+ <style scoped>
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .catalogo-container {
+      padding-left: 4rem; /* Mejor ajuste para evitar desbordes horizontales */
+    }
+
+    .contenido {
+      flex-direction: column;
+    }
+
+    .listado-productos {
+      flex-direction: row;
+      overflow-x: scroll;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      max-height: none;
+      padding-bottom: 1rem;
+    }
+
+    .producto-thumb {
+      min-width: 60px;
+    }
+
+    .detalle-producto {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .detalle-imagen img {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .miniaturas {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .menu-dropdown {
+      width: 100%;
+      left: 0 !important;
+      right: 0 !important;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .menu-button {
+      width: 100%;
+      text-align: left;
+    }
+
+    .menu-item {
+      white-space: nowrap;
+    }
+  }
+}
+
 </style>

@@ -169,3 +169,47 @@ const servicios = [
 }
 
 </style>
+<!-- estilos--safari nav -->
+ <style scoped>
+ @media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .servicios {
+      background-color: #fff;
+      padding: 1.5rem 0;
+    }
+
+    .grid {
+      display: block; /* Safari a veces falla con grid en ciertos casos */
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .item {
+      height: auto;
+      margin-bottom: 1rem;
+    }
+
+    .carrusel img {
+      object-fit: cover;
+      width: 100%;
+      height: auto;
+    }
+
+    .madera {
+      background: url('/src/assets/textura-madera.webp') center center / cover no-repeat;
+      -webkit-backface-visibility: hidden; /* mejora rendimiento */
+      -webkit-transform: translate3d(0,0,0);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .madera .contenido {
+      background-color: rgba(0, 0, 0, 0.5); /* ligeramente más opaco en Safari */
+      padding: 1rem;
+      border-radius: 6px;
+    }
+  }
+}
+
+</style>

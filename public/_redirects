@@ -1,0 +1,9 @@
+/    /index.html 200
+/terms      /terms  200
+/privacy    /privacy   200
+/About      /About   200
+/Products     /Products   200
+/contact    /contact   200
+
+# Ruta de error 404
+/*    /NotFound 404

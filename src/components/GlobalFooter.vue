@@ -72,3 +72,31 @@
   }
 }
 </style>
+<!-- estilos--safari nav -->
+ <style scoped>
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .footer-container {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.5rem;
+    }
+
+    .footer-container .social-icons {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .footer-container .social-icons a {
+      font-size: 1.3rem;
+    }
+
+    .copyright,
+    .copyright-2 {
+      font-size: 0.85rem;
+    }
+  }
+}
+
+</style>

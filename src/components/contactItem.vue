@@ -143,3 +143,31 @@ const enviarFormulario = () => {
   }
 }
 </style>
+<!-- estilos--safari nav -->
+ <style scoped>
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .contact-container {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo img {
+      max-width: 280px; /* Ajuste por si Safari rompe escalado */
+    }
+
+    .formulario input,
+    .formulario textarea {
+      font-size: 1.05rem;
+    }
+
+    .formulario button {
+      background-color: #222; /* Asegura contraste si Safari interpreta distinto */
+    }
+
+    .redes a {
+      font-size: 1.6rem;
+    }
+  }
+}
+</style>

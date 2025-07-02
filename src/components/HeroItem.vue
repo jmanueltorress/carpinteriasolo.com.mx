@@ -87,3 +87,32 @@
 }
 
 </style>
+<!-- estilos--safari nav -->
+ <style scoped>
+ @media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .hero-container {
+      flex-direction: column; /* Mejora visual en iOS en pantallas pequeñas */
+    }
+
+    .hero-image {
+      background-image: url('/assets/hero-home.webp'); /* Ruta compatible con Safari */
+      min-height: 300px;
+    }
+
+    .hero-content {
+      padding: 2rem 1rem;
+    }
+
+    .hero-title {
+      font-size: 2.2rem;
+      line-height: 1.2;
+    }
+
+    .hero-description {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+</style>

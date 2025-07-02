@@ -87,7 +87,7 @@ function toggleCard(card) {
 <style scoped>
 .organigrama-container {
   background-color: white;
-  font-family: sans-serif;
+ 
 }
 
 /* Encabezado */
@@ -309,7 +309,7 @@ function toggleCard(card) {
 }
 </style>
 
-<style>
+<style scoped>
 @media (min-width: 1024px) {
   .about {
     min-height: 100vh;
@@ -317,4 +317,30 @@ function toggleCard(card) {
     align-items: center;
   }
 }
+</style>
+<!-- estilos--safari nav -->
+<style>
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    /* Estilos solo para Safari */
+    .card {
+      background-color: rgba(0, 0, 0, 0.5);
+      -webkit-backdrop-filter: blur(5px);
+      backdrop-filter: blur(5px);
+    }
+
+    .buttons button {
+      margin: 0.5rem;
+      /* Por si no soporta gap en flex */
+    }
+
+    .top-section {
+      background: linear-gradient(135deg, rgba(3, 2, 2, 0.959), rgba(53, 36, 33, 0.7)),
+                  url('/assets/textura-madera.webp') center/cover no-repeat;
+    }
+
+    /* Puedes añadir más clases si lo necesitas */
+  }
+}
+
 </style>
