@@ -61,11 +61,11 @@
     </div>
 
     <!-- REDES SOCIALES -->
-    <div class="redes">
+    <!-- <div class="redes">
       <a href="https://www.facebook.com/share/15ZsJWHdT1/?mibextid=wwXIfr" target="_blank"><i class="fab fa-facebook"></i></a>
       <a href="tel:+524826900837"><i class="fas fa-phone"></i></a>
       <a href="mailto:carpinteriasolo@gmail.com"><i class="fas fa-envelope"></i></a>
-    </div>
+    </div> -->
   </div>
 </template>
 

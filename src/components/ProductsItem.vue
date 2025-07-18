@@ -35,6 +35,7 @@
         <section class="detalle-producto" v-if="productoSeleccionado">
           <div class="detalle-imagen">
             <img :src="productoSeleccionado.imagen" alt="Producto grande" />
+            <img :src="productoSeleccionado.imagen0" alt="Producto grande" />
           </div>
           <div class="detalle-extra">
             <div class="miniaturas">
@@ -79,7 +80,7 @@ onBeforeUnmount(() => {
 
 const categorias = ['MUEBLES PARA BAÑO', 'COCINAS']
 const categoriaSeleccionada = ref(categorias[0])
-const categoriasDeco = ['ACRILICOS', 'VINIL', 'MDF', 'LAMBRÍN','PERSONALIZACIÓN']
+const categoriasDeco = ['MDF', 'ACRILICOS', 'VINIL', 'LAMBRÍN']
 const categoriasDecoSeleccionada = ref(null)
 
 const productos = ref([{
@@ -87,8 +88,9 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'NANO',
   descripcion: 'Diseño compacto con cajón deslizable y puertas laterales. Máximo aprovechamiento del espacio con lavabo tipo bowl, perfecto para espacios reducidos.',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
   imagen: new URL('@/assets/nano-model.jpg', import.meta.url).href,
+  imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/nano-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/nano-model-3.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -98,9 +100,10 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'GREG',
   descripcion: 'Con puerta lateral y compartimento abierto, perfecto para almacenamiento versátil. Incluye lavabo tipo bowl y acabado en madera natural con detalles modernos.',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
 
   imagen: new URL('@/assets/greg-model.jpg', import.meta.url).href,
+  imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/greg-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/greg-model-3.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -110,8 +113,9 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'BORIS',
   descripcion: 'Compacto con diseño minimalista y puertas de madera natural. Ideal para baños pequeños con estilo rústico-moderno. ',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
   imagen: new URL('@/assets/boris-model.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/boris-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -121,9 +125,10 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'LIA',
   descripcion: 'Diseño con puertas frontales y compartimento inferior abierto. Combina almacenamiento cerrado y exhibición, ideal para baños de estilo industrial-moderno.',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
 
   imagen: new URL('@/assets/lia-model.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/lia-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -133,9 +138,10 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'RENI',
   descripcion: 'El más amplio de la colección con múltiples cajones y compartimentos. Diseño escalonado que maximiza el almacenamiento manteniendo un perfil elegante y funcional.',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
 
   imagen: new URL('@/assets/reni-model.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/reni-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/reni-model-3.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -145,9 +151,10 @@ const productos = ref([{
   categoria: 'MUEBLES PARA BAÑO',
   nombre: 'DANY',
   descripcion: 'Diseño funcional y moderno con dos cajones amplios. Estética minimalista que aporta orden y elegancia.',
-  nota: 'Todos los modelos están disponibles en 6 acabados de madera (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
+  nota: 'Todos los modelos están disponibles en 6 acabados de MDF (Nogal, Polar, Rivera, Roble Cocoa, Noruego, Tundra) y cuentan con medidas específicas optimizadas para diferentes espacios de baño. El lavabo es opcional en todos los modelos.',
 
   imagen: new URL('@/assets/dany-model.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/dany-model-2.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: linkMercadoLibre,
@@ -159,6 +166,7 @@ const productos = ref([{
   descripcion: 'Cocina integral de madera con acabado tipo nogal. Incluye módulos superiores e inferiores, espacio para estufa y tarja. ',
   
   imagen: new URL('@/assets/modelo-cosina.webp', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/model-none.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   nota: 'No incluye electrodomésticos, tarja ni accesorios, únicamente el mobiliario de madera mostrado. Contactanos para más información.',
@@ -179,6 +187,7 @@ const productos = ref([{
   nota: 'Personaliza tu producto con una amplia variedad de colores, acabados y detalles. Adaptamos cada pieza a tu estilo y necesidades, brindando opciones únicas que reflejan tu gusto. Contactanos para mas información.',
   descripcion: 'Personaliza tus ideas',
   imagen: new URL('@/assets/personalizacion-3.jpg', import.meta.url).href,
+  
   imagen2: new URL('@/assets/model-none.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
   link: null,
@@ -246,84 +255,45 @@ const productos = ref([{
 // decoración
 //acrilicos
 {
-  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura1.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'ACRILICOS',
   nota: 'Letreros Sin Luz en Acrilicos',
   descripcion: 'Ideal para sala o recámara o decoraciones exteriores',
   imagen: new URL('@/assets/model-acrilicos-1.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
-  imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
+  imagen3: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
 
 
   link: linkMercadoLibre,
 },
 {
-  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
-  categoria: 'DECORACIÓN',
-  nombre: 'ACRILICOS',
-  nota: 'Colores',
-  imagen: new URL('@/assets/model-acrilicos-3.jpg', import.meta.url).href,
-  imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
-  imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
-  link: linkMercadoLibre,
-},
-{
-  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura3.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'ACRILICOS',
   nota: 'Letras personalizadas en MDF o acrílico, ideales para decorar habitaciones, eventos o regalos especiales. Diseño elegante y preciso',
   descripcion: 'Nombres en Corte Laser',
   imagen: new URL('@/assets/model-laser-1.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
-  imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
+  imagen3: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
 
 
   link: linkMercadoLibre,
 },
 {
-  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura2.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'ACRILICOS',
-  nota: 'Combinación creativa de MDF y acrílico para lograr piezas decorativas únicas y modernas. Perfectos para muros, letreros, logotipos o detalles personalizados.',
-  descripcion: 'Diseños MDF con acrilico',
-  imagen: new URL('@/assets/model-acrilicos-4.jpg', import.meta.url).href,
-  imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
-  imagen3: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
-
-
-  link: linkMercadoLibre,
-},
-
-
-// decoración
-//vinil
-{
-  imagenMiniatura: new URL('@/assets/deco-vinil-miniatura.jpg', import.meta.url).href,
-  categoria: 'DECORACIÓN',
-  nombre: 'VINIL',
-  nota: 'Letreros decorativos elaborados en acrílico con vinil autoadherible. Ideales para interiores, brindan una solución estética y económica sin iluminación.',
-  descripcion: 'Letreros sin luz en acrilico y vinil',
-  imagen: new URL('@/assets/model-vinil-1.jpg', import.meta.url).href,
+  nota: 'Desde letreros hasta artículos promocionales, ofrecemos productos personalizados en MDF, acrílico y más, perfectos para potenciar tu marca. Ideales para oficinas, tiendas y eventos corporativos, con acabados de alta calidad y precisión.',
+  imagen: new URL('@/assets/model-acrilicos-3.jpg', import.meta.url).href,
+   imagen0: new URL('@/assets/model-acrilicos-4.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
-
-
   link: linkMercadoLibre,
 },
-{
-  imagenMiniatura: new URL('@/assets/deco-vinil-miniatura.jpg', import.meta.url).href,
-  categoria: 'DECORACIÓN',
-  nombre: 'VINIL',
-  nota: 'Letreros decorativos elaborados en acrílico con vinil autoadherible. Ideales para interiores, brindan una solución estética y económica sin iluminación.',
-  descripcion: 'Letreros sin luz en acrilico y vinil',
-  imagen: new URL('@/assets/model-vinil-2.jpg', import.meta.url).href,
-  imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
-  imagen3: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
 
-
-  link: linkMercadoLibre,
-},
 //MDF
 {
   imagenMiniatura: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
@@ -332,6 +302,7 @@ const productos = ref([{
   nota: 'Decoración personalizada en MDF con detalles en acrílico. Diseños tiernos y coloridos ideales para dar la bienvenida a recién nacidos o decorar espacios infantiles.',
   descripcion: 'Diseños MDF C/ Acrilico - Babys Welcome',
   imagen: new URL('@/assets/model-mdf-1.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
 
@@ -345,6 +316,7 @@ const productos = ref([{
   nota: 'Combinación creativa de MDF y acrílico para lograr piezas decorativas únicas y modernas. Perfectos para muros, letreros, logotipos o detalles personalizados.',
   descripcion: 'Diseños MDF con acrilico',
   imagen: new URL('@/assets/model-acrilicos-4.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
 
@@ -365,6 +337,25 @@ const productos = ref([{
 
   link: linkMercadoLibre,
 },
+
+// decoración
+//vinil
+{
+  imagenMiniatura: new URL('@/assets/deco-vinil-miniatura.jpg', import.meta.url).href,
+  categoria: 'DECORACIÓN',
+  nombre: 'VINIL',
+  nota: 'Letreros decorativos elaborados en acrílico con vinil autoadherible. Ideales para interiores, brindan una solución estética y económica sin iluminación.',
+  descripcion: 'Letreros sin luz en acrilico y vinil',
+  imagen: new URL('@/assets/model-vinil-1.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/model-vinil-2.jpg', import.meta.url).href,
+  imagen2: new URL('@/assets/corte-laser.jpg', import.meta.url).href,
+  imagen3: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
+
+
+  link: linkMercadoLibre,
+},
+
+
 //Lambrin
 {
   imagenMiniatura: new URL('@/assets/deco-lambrin-miniatura.jpg', import.meta.url).href,
@@ -372,7 +363,8 @@ const productos = ref([{
   nombre: 'LAMBRÍN',
   nota: 'Letreros con o sin luz LED fabricados en lambrín de madera y acrílico, ideales para interiores modernos. Combinan estilo decorativo y funcionalidad para destacar marcas o mensajes.',
   descripcion: 'Letreros de Lambrín con o Sin Luz Led en Acrilico',
-  imagen: new URL('@/assets/model-lambrin-1.jpg', import.meta.url).href,
+  imagen: new URL('@/assets/model-lambrin-1-2.jpg', import.meta.url).href,
+    imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/deco-acrilicos-miniatura.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
 
