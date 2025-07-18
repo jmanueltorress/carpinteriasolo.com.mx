@@ -21,7 +21,7 @@
       </div>
       <p class="copyright-2">
     SITIO WEB DESARROLLADO POR 
-    <a href="https://github.com/jmanueltorress"><img src="/images/footer/logo-dev.png" alt="Logo-Developer" class="logo-dev" /></a>
+    <a target="_blank" href="https://github.com/jmanueltorress"><img src="/images/footer/logo-dev.png" alt="Logo-Developer" class="logo-dev" /></a>
   </p>
     </div>
   </footer>
