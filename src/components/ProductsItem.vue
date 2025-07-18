@@ -330,6 +330,7 @@ const productos = ref([{
   nota: 'MEDIDAS ESTANDAR',
   descripcion: 'Diseños MDF',
   imagen: new URL('@/assets/mdf-use-1.jpg', import.meta.url).href,
+   imagen0: new URL('@/assets/none-section.jpg', import.meta.url).href,
   imagen2: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
   imagen3: new URL('@/assets/model-none.jpg', import.meta.url).href,
 
