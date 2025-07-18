@@ -296,7 +296,7 @@ const productos = ref([{
 
 //MDF
 {
-  imagenMiniatura: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/babyevents.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'MDF',
   nota: 'Decoración personalizada en MDF con detalles en acrílico. Diseños tiernos y coloridos ideales para dar la bienvenida a recién nacidos o decorar espacios infantiles.',
@@ -310,7 +310,7 @@ const productos = ref([{
   link: linkMercadoLibre,
 },
 {
-  imagenMiniatura: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/deco-acrilicos-miniatura2.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'MDF',
   nota: 'Combinación creativa de MDF y acrílico para lograr piezas decorativas únicas y modernas. Perfectos para muros, letreros, logotipos o detalles personalizados.',
@@ -324,7 +324,7 @@ const productos = ref([{
   link: linkMercadoLibre,
 },
 {
-  imagenMiniatura: new URL('@/assets/mdf-use.jpg', import.meta.url).href,
+  imagenMiniatura: new URL('@/assets/mdfsizes.jpg', import.meta.url).href,
   categoria: 'DECORACIÓN',
   nombre: 'TIPO DE MADERA: MDF',
   nota: 'MEDIDAS ESTANDAR',
