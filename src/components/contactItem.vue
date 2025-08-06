@@ -1,38 +1,53 @@
 <template>
-  <div class="contact-container">
-    <!-- LOGO -->
-    <!-- <div class="logo">
-      <img src="@/assets/logo-dark.png" alt="Logo SOLO" />
-    </div> -->
+ <div class="contact-container">
+  <!-- COLUMNA 1: VIDEO (TikTok) -->
+  <div class="col">
+    <div class="tiktok">
+      <blockquote
+        class="tiktok-embed"
+        cite="https://www.tiktok.com/@carpinteriasolo/video/7525189836119084295"
+        data-video-id="7525189836119084295"
+        data-embed-from="oembed"
+        style="max-width: 100%; min-width: 100%"
+      >
+        <section>
+          <a target="_blank" title="@carpinteriasolo" href="https://www.tiktok.com/@carpinteriasolo?refer=embed">@carpinteriasolo</a>
+          <p>
+            Diseñamos contigo, para ti y pensando en tu espacio. Cada proyecto para nosotros es tan especial como para ti.
+            Tu espacio merece algo bien hecho. ¡SOLO CARPINTERIA LO HACE POSIBLE!
+            <a title="solocarpintería" target="_blank" href="https://www.tiktok.com/tag/solocarpinter%C3%ADa?refer=embed">#SoloCarpintería</a>
+            ...
+          </p>
+          <a target="_blank" title="♬ sonido original - Carpintería SOLO" href="https://www.tiktok.com/music/sonido-original-7525189881690114832?refer=embed">♬ sonido original - Carpintería SOLO</a>
+        </section>
+      </blockquote>
+    </div>
+  </div>
 
-    <!-- FORMULARIO -->
+  <!-- COLUMNA 2: FORMULARIO -->
+  <div class="col">
     <div class="formulario">
       <h2>ESCRÍBENOS!</h2>
       <p>TE RESPONDEREMOS CON GUSTO.</p>
       <form @submit.prevent="enviarFormulario">
-  <input type="text" v-model="nombre" name="Nombre" placeholder="Nombre" required />
-  <input type="text" v-model="empresa" name="Empresa" placeholder="Empresa" />
-  <input type="tel" v-model="telefono" name="Telefono" placeholder="Número de Contacto" required />
-  <textarea v-model="mensaje" name="Mensaje" placeholder="Mensaje" rows="4" required></textarea>
+        <input type="text" v-model="nombre" name="Nombre" placeholder="Nombre" required />
+        <input type="text" v-model="empresa" name="Empresa" placeholder="Empresa" />
+        <input type="tel" v-model="telefono" name="Telefono" placeholder="Número de Contacto" required />
+        <textarea v-model="mensaje" name="Mensaje" placeholder="Mensaje" rows="4" required></textarea>
 
-  <!-- AVISO DE PRIVACIDAD -->
-  <label class="aviso">
-    <input
-      type="checkbox"
-      v-model="avisoPrivacidad"
-      name="AvisoPrivacidad"
-      required
-    />
-    He leído y acepto el <router-link to="/avisoPrivacy">Aviso de Privacidad.</router-link>
-  </label>
+        <!-- AVISO DE PRIVACIDAD -->
+        <label class="aviso">
+          <input type="checkbox" v-model="avisoPrivacidad" name="AvisoPrivacidad" required />
+          He leído y acepto el <router-link to="/avisoPrivacy">Aviso de Privacidad.</router-link>
+        </label>
 
-  <button type="submit">Enviar</button>
-</form>
+        <button type="submit">Enviar</button>
+      </form>
     </div>
+  </div>
 
-
-
-    <!-- MAPA -->
+  <!-- COLUMNA 3: MAPA -->
+  <div class="col">
     <div class="mapa">
       <h2>VISÍTANOS!</h2>
       <p>ESTAMOS PARA ATENDERTE</p>
@@ -45,31 +60,14 @@
         loading="lazy"
         referrerpolicy="no-referrer-when-downgrade"
       ></iframe>
-   
     </div>
-        <!-- VIDEO -->
-    <div class="video">
-      
-      <iframe
-        width="100%"
-        height="100%"
-        :src="youtubeURL"
-        title="YouTube video player"
-        frameborder="0"
-        allowfullscreen
-      ></iframe>
-    </div>
-
-    <!-- REDES SOCIALES -->
-    <!-- <div class="redes">
-      <a href="https://www.facebook.com/share/15ZsJWHdT1/?mibextid=wwXIfr" target="_blank"><i class="fab fa-facebook"></i></a>
-      <a href="tel:+524826900837"><i class="fas fa-phone"></i></a>
-      <a href="mailto:carpinteriasolo@gmail.com"><i class="fas fa-envelope"></i></a>
-    </div> -->
   </div>
+</div>
+
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { ref } from 'vue'
 
 const nombre = ref('')
@@ -113,10 +111,28 @@ const enviarFormulario = async () => {
     alert('Ocurrió un error de red. Intenta más tarde.')
   }
 }
+// tiktockEmbed
+onMounted(() => {
+  const script = document.createElement('script')
+  script.setAttribute('src', 'https://www.tiktok.com/embed.js')
+  script.setAttribute('async', '')
+  script.onerror = () => {
+    const fallbackScript = document.createElement('script')
+    fallbackScript.src = 'https://iframely.net/files/tiktok-embed.js'
+    document.body.appendChild(fallbackScript)
+  }
+  document.body.appendChild(script)
+})
 </script>
 
 
 <style scoped>
+.tiktok {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .contact-container {
   display: flex;
   flex-wrap: wrap;
