@@ -17,7 +17,9 @@
         <router-link to="/">Inicio</router-link>
         <router-link to="/About">Nosotros</router-link>
         <router-link to="/Products">Catálogo</router-link>
+                <router-link to="/renders">Renders 3D</router-link>
         <router-link to="/contact">Contáctanos</router-link>
+
         <router-link to="/store"><img src="@/assets/shop-icon.png" alt=""></router-link>
       </div>
 
