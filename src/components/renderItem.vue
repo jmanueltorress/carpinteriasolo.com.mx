@@ -1,397 +1,672 @@
 <template>
-  <div class="app">
-    <!-- Modal -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal">
-        <form @submit.prevent="handleSubmit" class="form">
-          <fieldset>
-            <legend>Personaliza tu mueble 3D</legend>
+  <div id="app" style="display: flex; height: 100vh;">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3>Tipo de Mueble</h3>
+      <select v-model="tipoSeleccionado">
+        <option v-for="tipo in tiposMuebles" :key="tipo.nombre" :value="tipo">
+          {{ tipo.nombre }}
+        </option>
+      </select>
 
-            <label class="form-group">
-              <span>Tipo de mueble:</span>
-              <select v-model="form.tipo" required>
-                <option value="banio">🛁 Mueble de baño</option>
-                <option value="estante">📚 Estante</option>
-                <option value="cocina">🍳 Cocina integral</option>
-              </select>
-            </label>
+      <h3>Personalizar</h3>
 
-            <label class="form-group">
-              <span>Ancho (cm):</span>
-              <input type="number" v-model.number="form.ancho" min="10" required />
-            </label>
-
-            <label class="form-group">
-              <span>Alto (cm):</span>
-              <input type="number" v-model.number="form.alto" min="10" required />
-            </label>
-
-            <label class="form-group">
-              <span>Profundidad (cm):</span>
-              <input type="number" v-model.number="form.profundidad" min="10" required />
-            </label>
-
-            <!-- Selección de color con preview -->
-        <label class="form-group color-select">
-  <span>Color:</span>
-  <select v-model="form.color" required>
-    <option value="nogal">Nogal</option>
-    <option value="polar">Polar</option>
-    <option value="rivera">Rivera Roble Cocoa</option>
-    <option value="noruego">Noruego</option>
-    <option value="tundra">Tundra</option>
-  </select>
-  <div class="color-preview" :style="{ backgroundColor: woodColors[form.color] }"></div>
-</label>
-
-
-            <button type="submit" class="btn-primary">Generar mueble</button>
-          </fieldset>
-        </form>
+      <!-- Inputs dinámicos -->
+      <div v-if="!tipoSeleccionado.estandar">
+        <label>Ancho:
+          <input type="number" v-model.number="tipoSeleccionado.ancho" step="0.1" />
+        </label>
+        <label>Alto:
+          <input type="number" v-model.number="tipoSeleccionado.alto" step="0.1" />
+        </label>
+        <label>Fondo:
+          <input type="number" v-model.number="tipoSeleccionado.fondo" step="0.1" />
+        </label>
+        <label>Puertas:
+          <input type="number" v-model.number="tipoSeleccionado.puertas" min="0" />
+        </label>
+        <label>Cajones:
+          <input type="number" v-model.number="tipoSeleccionado.cajones" min="0" />
+        </label>
       </div>
+
+      <!-- Mostrar medidas bloqueadas -->
+      <div v-else>
+        <p><b>Ancho:</b> {{ tipoSeleccionado.ancho }} m</p>
+        <p><b>Alto:</b> {{ tipoSeleccionado.alto }} m</p>
+        <p><b>Fondo:</b> {{ tipoSeleccionado.fondo }} m</p>
+        <p><b>Puertas:</b> {{ tipoSeleccionado.puertas }}</p>
+        <p><b>Cajones:</b> {{ tipoSeleccionado.cajones }}</p>
+      </div>
+
+      <!-- Selector de color -->
+      <h3>Color</h3>
+      <div class="color-selector">
+        <button
+          v-for="c in colores"
+          :key="c"
+          :style="{ background: c }"
+          class="color-btn"
+          @click="colorSeleccionado = c; renderMueble()"
+        ></button>
+      </div>
+
+      <button @click="renderMueble">Aplicar Cambios</button>
     </div>
 
-    <!-- Botón para reabrir modal -->
-    <div v-if="!showModal" class="controls-container">
-      <button class="btn-secondary" @click="showModal = true">Volver a generar</button>
-    </div>
-
-    <!-- Canvas 3D -->
-    <div class="viewer">
-      <canvas ref="canvas"></canvas>
-    </div>
+    <!-- Lienzo -->
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { onMounted, ref, reactive } from 'vue'
 
-const showModal = ref(true)
 const canvas = ref(null)
 
-const woodColors = {
-  nogal: '#5C3A21',       // Nogal oscuro marrón
-  polar: '#D9D1C7',       // Polar, beige claro
-  rivera: '#7E5E3A',      // Rivera Roble Cocoa, marrón medio
-  noruego: '#A1836B',     // Noruego, marrón claro tostado
-  tundra: '#9C8F82',      // Tundra, gris-marrón pálido
+// Lista de muebles
+const tiposMuebles = reactive([
+  { nombre: 'Mueble Bajo de Cocina', ancho: 1.2, alto: 0.9, fondo: 0.6, puertas: 2, cajones: 1, estandar: false },
+  { nombre: 'Armario Alto', ancho: 1.2, alto: 2.2, fondo: 0.6, puertas: 2, cajones: 0, estandar: false },
+  { nombre: 'Mueble de Baño', ancho: 0.8, alto: 0.8, fondo: 0.5, puertas: 2, cajones: 1, estandar: false },
+  { nombre: 'Mueble TV', ancho: 1.5, alto: 0.6, fondo: 0.5, puertas: 2, cajones: 2, estandar: false },
+  { nombre: 'Cocina Integral', ancho: 3.0, alto: 2.2, fondo: 0.6, puertas: 6, cajones: 4, estandar: false },
+  { nombre: 'Estante Abierto', ancho: 1.2, alto: 2.0, fondo: 0.3, puertas: 0, cajones: 0, estandar: false },
+  { nombre: 'Alacena', ancho: 1.5, alto: 2.0, fondo: 0.5, puertas: 4, cajones: 0, estandar: false },
+
+  // 🚿 Modelos de baño bloqueados (Nano, Geg, Boris)
+  { nombre: 'Nano', ancho: 0.6, alto: 0.85, fondo: 0.45, puertas: 2, cajones: 0, estandar: true },
+  { nombre: 'Greg', ancho: 0.8, alto: 0.85, fondo: 0.45, puertas: 1, cajones: 1, estandar: true },
+  { nombre: 'Boris', ancho: 0.46, alto: 0.85, fondo: 0.40, puertas: 4, cajones: 2, estandar: true },
+  { nombre: 'Lia', ancho: 0.64, alto: 0.85, fondo: 0.45, puertas: 2, cajones: 0, estandar: true },
+  { nombre: 'Reni', ancho: 0.90, alto: 0.85, fondo: 0.45, puertas: 2, cajones: 4, estandar: true },
+  { nombre: 'Dany', ancho: 0.63, alto: 0.82, fondo: 0.45, puertas: 0, cajones: 3, estandar: true },
+])
+
+let tipoSeleccionado = tiposMuebles[0]
+let scene, camera, renderer, controls, muebleActual
+
+// 🎨 Colores disponibles
+const colores = ['white', '#fef08a', '#bbf7d0', '#bfdbfe', '#fca5a5']
+let colorSeleccionado = 'white'
+
+// Crear mueble
+function crearMueble(muebleData) {
+  const { ancho, alto, fondo, puertas, cajones, nombre } = muebleData
+  const mueble = new THREE.Group()
+
+  // Diseños específicos según el modelo
+  if (nombre === 'Nano') {
+    return crearNano(ancho, alto, fondo)
+  } else if (nombre === 'Greg') {
+    return crearGreg(ancho, alto, fondo)
+  } else if (nombre === 'Boris') {
+    return crearBoris(ancho, alto, fondo)
+  } else if (nombre === 'Lia') {
+    return crearLia(ancho, alto, fondo)
+  } else if (nombre === 'Reni') {
+    return crearReni(ancho, alto, fondo)
+  } else if (nombre === 'Dany') {
+    return crearDany(ancho, alto, fondo)
+  }
+
+  // Diseño genérico para otros muebles
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ color: colorSeleccionado })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Puertas genéricas
+  if (puertas > 0) {
+    const puertaAncho = (ancho - 0.02 * (puertas + 1)) / puertas
+    const puertaAlto = alto - 0.1
+    for (let i = 0; i < puertas; i++) {
+      const puertaGeo = new THREE.BoxGeometry(puertaAncho, puertaAlto, 0.02)
+      const puertaMat = new THREE.MeshStandardMaterial({ color: 0xdedede })
+      const puerta = new THREE.Mesh(puertaGeo, puertaMat)
+      puerta.position.set(-ancho / 2 + puertaAncho / 2 + (puertaAncho + 0.02) * i + 0.02, 0, fondo / 2 + 0.011)
+
+      const bordeGeo = new THREE.EdgesGeometry(puertaGeo)
+      const bordeMat = new THREE.LineBasicMaterial({ color: 0x333333 })
+      const borde = new THREE.LineSegments(bordeGeo, bordeMat)
+      puerta.add(borde)
+
+      mueble.add(puerta)
+    }
+  }
+
+  // Cajones genéricos
+  if (cajones > 0) {
+    const cajonAncho = ancho - 0.04
+    const cajonAlto = 0.25
+    for (let i = 0; i < cajones; i++) {
+      const cajonGeo = new THREE.BoxGeometry(cajonAncho, cajonAlto, 0.02)
+      const cajonMat = new THREE.MeshStandardMaterial({ color: 0xb0b0b0 })
+      const cajon = new THREE.Mesh(cajonGeo, cajonMat)
+      cajon.position.set(0, -alto / 2 + cajonAlto / 2 + (cajonAlto + 0.02) * i + 0.05, fondo / 2 + 0.011)
+
+      const bordeGeo = new THREE.EdgesGeometry(cajonGeo)
+      const bordeMat = new THREE.LineBasicMaterial({ color: 0x333333 })
+      const borde = new THREE.LineSegments(bordeGeo, bordeMat)
+      cajon.add(borde)
+
+      mueble.add(cajon)
+    }
+  }
+
+  return mueble
 }
 
-const form = reactive({
-  tipo: 'banio',
-  ancho: 100,
-  alto: 80,
-  profundidad: 50,
-  color: 'nogal',
-})
+// Modelo NANO - mueble blanco con 2 puertas y 1 cajón inferior
+function crearNano(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
 
-let scene, camera, renderer, controls, muebleGroup, animationId
+  // Encimera blanca
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.02, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.3,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0, alto/2 + 0.02, 0)
+  mueble.add(encimera)
 
-function initScene() {
+  // Lavabo sobre encimera
+  const lavaboGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.06, 16)
+  const lavaboMat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.1,
+    metalness: 0.05
+  })
+  const lavabo = new THREE.Mesh(lavaboGeo, lavaboMat)
+  lavabo.position.set(0, alto/2 + 0.07, 0)
+  mueble.add(lavabo)
+
+  // 2 puertas principales
+  const puertaAncho = (ancho - 0.02) / 2
+  const puertaAlto = alto * 0.7
+  
+  const puertaGeo = new THREE.BoxGeometry(puertaAncho, puertaAlto, 0.02)
+  const puertaMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  
+  const puerta1 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta1.position.set(-ancho/4, alto * 0.1, fondo/2 + 0.011)
+  mueble.add(puerta1)
+
+  const puerta2 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta2.position.set(ancho/4, alto * 0.1, fondo/2 + 0.011)
+  mueble.add(puerta2)
+
+  // 1 cajón en la parte inferior
+  const cajonGeo = new THREE.BoxGeometry(ancho - 0.03, 0.18, 0.02)
+  const cajonMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cajon = new THREE.Mesh(cajonGeo, cajonMat)
+  cajon.position.set(0, -alto/2 + 0.12, fondo/2 + 0.011)
+  mueble.add(cajon)
+
+  return mueble
+}
+
+// Modelo GREG - mueble con lateral abierto, 1 puerta y 1 cajón
+function crearGreg(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Encimera extendida
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.15, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xdeb887,
+    roughness: 0.7,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0.075, alto/2 + 0.02, 0)
+  mueble.add(encimera)
+
+  // Lavabo beige
+  const lavaboGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.05, 16)
+  const lavaboMat = new THREE.MeshStandardMaterial({ 
+    color: 0xe8dcc0,
+    roughness: 0.2,
+    metalness: 0.05
+  })
+  const lavabo = new THREE.Mesh(lavaboGeo, lavaboMat)
+  lavabo.position.set(0, alto/2 + 0.065, 0)
+  mueble.add(lavabo)
+
+  // Lateral izquierdo abierto - solo estantes
+  const estante1Geo = new THREE.BoxGeometry(0.15, 0.02, fondo - 0.02)
+  const estanteMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const estante1 = new THREE.Mesh(estante1Geo, estanteMat)
+  estante1.position.set(ancho/2 + 0.075, alto/4, 0)
+  mueble.add(estante1)
+
+  const estante2 = new THREE.Mesh(estante1Geo, estanteMat)
+  estante2.position.set(ancho/2 + 0.075, -alto/4, 0)
+  mueble.add(estante2)
+
+  // 1 puerta en la parte derecha
+  const puertaGeo = new THREE.BoxGeometry(ancho - 0.02, alto - 0.05, 0.02)
+  const puertaMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const puerta = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta.position.set(0, 0, fondo/2 + 0.011)
+  mueble.add(puerta)
+
+  // 1 cajón inferior 
+  const cajonGeo = new THREE.BoxGeometry(ancho - 0.04, 0.15, 0.02)
+  const cajonMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cajon = new THREE.Mesh(cajonGeo, cajonMat)
+  cajon.position.set(0, -alto/2 + 0.1, fondo/2 + 0.011)
+  mueble.add(cajon)
+
+  return mueble
+}
+
+// Modelo BORIS - mueble muy estrecho con cajón superior y 2 puertas
+function crearBoris(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Encimera blanca
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.02, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.3,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0, alto/2 + 0.02, 0)
+  mueble.add(encimera)
+
+  // 1 cajón superior (como se ve en la imagen)
+  const cajonSuperiorGeo = new THREE.BoxGeometry(ancho - 0.02, 0.15, 0.02)
+  const cajonMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cajon = new THREE.Mesh(cajonSuperiorGeo, cajonMat)
+  cajon.position.set(0, alto/2 - 0.1, fondo/2 + 0.011)
+  mueble.add(cajon)
+
+  // 2 puertas principales (no 4 como puse antes)
+  const puertaAncho = (ancho - 0.015) / 2
+  const puertaAlto = alto * 0.6
+  
+  const puertaGeo = new THREE.BoxGeometry(puertaAncho, puertaAlto, 0.02)
+  const puertaMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  
+  const puerta1 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta1.position.set(-ancho/4, -alto/6, fondo/2 + 0.011)
+  mueble.add(puerta1)
+
+  const puerta2 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta2.position.set(ancho/4, -alto/6, fondo/2 + 0.011)
+  mueble.add(puerta2)
+
+  return mueble
+}
+
+// Modelo LIA - mueble con 2 puertas superiores y área abierta inferior
+function crearLia(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Encimera
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.02, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.3,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0, alto/2 + 0.02, 0)
+  mueble.add(encimera)
+
+  // Lavabo
+  const lavaboGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.06, 16)
+  const lavaboMat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.1,
+    metalness: 0.05
+  })
+  const lavabo = new THREE.Mesh(lavaboGeo, lavaboMat)
+  lavabo.position.set(0, alto/2 + 0.07, 0)
+  mueble.add(lavabo)
+
+  // 2 puertas en la parte superior
+  const puertaAncho = (ancho - 0.02) / 2
+  const puertaAlto = alto * 0.5
+  
+  const puertaGeo = new THREE.BoxGeometry(puertaAncho, puertaAlto, 0.02)
+  const puertaMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  
+  const puerta1 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta1.position.set(-ancho/4, alto/8, fondo/2 + 0.011)
+  mueble.add(puerta1)
+
+  const puerta2 = new THREE.Mesh(puertaGeo, puertaMat)
+  puerta2.position.set(ancho/4, alto/8, fondo/2 + 0.011)
+  mueble.add(puerta2)
+
+  // Estante en área abierta inferior
+  const estanteGeo = new THREE.BoxGeometry(ancho - 0.04, 0.02, fondo - 0.02)
+  const estanteMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const estante = new THREE.Mesh(estanteGeo, estanteMat)
+  estante.position.set(0, -alto/3, 0)
+  mueble.add(estante)
+
+  return mueble
+}
+
+// Modelo RENI - con 2 puertas laterales y múltiples cajones centrales
+function crearReni(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Encimera
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.02, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.3,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0, alto/2 + 0.02, 0)
+  mueble.add(encimera)
+
+  // Lavabo
+  const lavaboGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.06, 16)
+  const lavaboMat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff,
+    roughness: 0.1,
+    metalness: 0.05
+  })
+  const lavabo = new THREE.Mesh(lavaboGeo, lavaboMat)
+  lavabo.position.set(0, alto/2 + 0.07, 0)
+  mueble.add(lavabo)
+
+  // Puerta izquierda (abierta en la imagen mostrando interior)
+  const puertaGeo = new THREE.BoxGeometry(ancho/3, alto * 0.7, 0.02)
+  const puertaMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const puertaIzq = new THREE.Mesh(puertaGeo, puertaMat)
+  puertaIzq.position.set(-ancho/2 + 0.05, -alto/8, fondo/2 + 0.011)
+  puertaIzq.rotation.y = Math.PI/3 // Puerta abierta
+  mueble.add(puertaIzq)
+
+  // Puerta derecha
+  const puertaDer = new THREE.Mesh(puertaGeo, puertaMat)
+  puertaDer.position.set(ancho/2 - 0.05, -alto/8, fondo/2 + 0.011)
+  mueble.add(puertaDer)
+
+  // 4 cajones centrales apilados
+  const cajonAncho = ancho/2
+  const cajonAlto = 0.12
+  const cajonGeo = new THREE.BoxGeometry(cajonAncho, cajonAlto, 0.02)
+  const cajonMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+
+  for (let i = 0; i < 4; i++) {
+    const cajon = new THREE.Mesh(cajonGeo, cajonMat)
+    cajon.position.set(0, alto/2 - 0.2 - (i * 0.14), fondo/2 + 0.011)
+    mueble.add(cajon)
+  }
+
+  return mueble
+}
+
+// Modelo DANY - solo 3 cajones apilados con tiradores horizontales
+function crearDany(ancho, alto, fondo) {
+  const mueble = new THREE.Group()
+  
+  // Cuerpo principal
+  const cuerpoGeo = new THREE.BoxGeometry(ancho, alto, fondo)
+  const cuerpoMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+  const cuerpo = new THREE.Mesh(cuerpoGeo, cuerpoMat)
+  mueble.add(cuerpo)
+
+  // Encimera
+  const encimeraGeo = new THREE.BoxGeometry(ancho + 0.02, 0.04, fondo + 0.02)
+  const encimeramat = new THREE.MeshStandardMaterial({ 
+    color: 0xe8dcc0,
+    roughness: 0.7,
+    metalness: 0.1
+  })
+  const encimera = new THREE.Mesh(encimeraGeo, encimeramat)
+  encimera.position.set(0, alto/2 + 0.02, 0)
+  mueble.add(encimera)
+
+  // Lavabo beige
+  const lavaboGeo = new THREE.CylinderGeometry(0.12, 0.1, 0.05, 16)
+  const lavaboMat = new THREE.MeshStandardMaterial({ 
+    color: 0xe8dcc0,
+    roughness: 0.2,
+    metalness: 0.05
+  })
+  const lavabo = new THREE.Mesh(lavaboGeo, lavaboMat)
+  lavabo.position.set(0, alto/2 + 0.065, 0)
+  mueble.add(lavabo)
+
+  // 3 cajones apilados
+  const cajonAncho = ancho - 0.04
+  const cajonAlto = 0.18
+  const cajonGeo = new THREE.BoxGeometry(cajonAncho, cajonAlto, 0.02)
+  const cajonMat = new THREE.MeshStandardMaterial({ 
+    color: colorSeleccionado,
+    roughness: 0.8,
+    metalness: 0.1
+  })
+
+  // Cajón superior
+  const cajon1 = new THREE.Mesh(cajonGeo, cajonMat)
+  cajon1.position.set(0, alto/2 - 0.15, fondo/2 + 0.011)
+  mueble.add(cajon1)
+
+  // Cajón medio
+  const cajon2 = new THREE.Mesh(cajonGeo, cajonMat)
+  cajon2.position.set(0, alto/2 - 0.35, fondo/2 + 0.011)
+  mueble.add(cajon2)
+
+  // Cajón inferior
+  const cajon3 = new THREE.Mesh(cajonGeo, cajonMat)
+  cajon3.position.set(0, -alto/2 + 0.12, fondo/2 + 0.011)
+  mueble.add(cajon3)
+
+  // Tiradores horizontales negros
+  const tiradorGeo = new THREE.BoxGeometry(0.2, 0.015, 0.01)
+  const tiradorMat = new THREE.MeshStandardMaterial({ 
+    color: 0x333333,
+    roughness: 0.3,
+    metalness: 0.7
+  })
+  
+  const tirador1 = new THREE.Mesh(tiradorGeo, tiradorMat)
+  tirador1.position.set(0, alto/2 - 0.15, fondo/2 + 0.025)
+  mueble.add(tirador1)
+
+  const tirador2 = new THREE.Mesh(tiradorGeo, tiradorMat)
+  tirador2.position.set(0, alto/2 - 0.35, fondo/2 + 0.025)
+  mueble.add(tirador2)
+
+  const tirador3 = new THREE.Mesh(tiradorGeo, tiradorMat)
+  tirador3.position.set(0, -alto/2 + 0.12, fondo/2 + 0.025)
+  mueble.add(tirador3)
+
+  return mueble
+}
+
+// Render
+function renderMueble() {
+  if (muebleActual) scene.remove(muebleActual)
+  muebleActual = crearMueble(tipoSeleccionado)
+  scene.add(muebleActual)
+}
+
+// Montar escena
+onMounted(() => {
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xffffff)
+  scene.background = new THREE.Color(0xf0f0f0)
 
-  camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
-  )
-  camera.position.set(0, 0, 3)
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000)
+  camera.position.set(5, 3, 6)
 
   renderer = new THREE.WebGLRenderer({ canvas: canvas.value, antialias: true })
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setSize(window.innerWidth - 200, window.innerHeight)
 
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
-  controls.dampingFactor = 0.05
-  controls.update()
 
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
-  scene.add(ambientLight)
+  const light = new THREE.DirectionalLight(0xffffff, 1)
+  light.position.set(5, 5, 5)
+  scene.add(light)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5))
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6)
-  directionalLight.position.set(5, 10, 7)
-  scene.add(directionalLight)
-
-  window.addEventListener('resize', onResize)
-  animate()
-}
-
-function generateModel() {
-  if (muebleGroup) {
-    scene.remove(muebleGroup)
-    muebleGroup.traverse((obj) => {
-      if (obj.geometry) obj.geometry.dispose()
-      if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose())
-        else obj.material.dispose()
-      }
-    })
-  }
-
-  muebleGroup = new THREE.Group()
-
-  const w = form.ancho / 100
-  const h = form.alto / 100
-  const d = form.profundidad / 100
-
-  const material = new THREE.MeshStandardMaterial({
-    color: woodColors[form.color],
-    roughness: 0.6,
-    metalness: 0.2,
+  window.addEventListener('resize', () => {
+    camera.aspect = (window.innerWidth - 200) / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth - 200, window.innerHeight)
   })
 
-  if (form.tipo === 'banio') {
-    const boxGeo = new THREE.BoxGeometry(w, h * 0.8, d)
-    const boxMesh = new THREE.Mesh(boxGeo, material)
-    boxMesh.position.y = h * 0.1
-    muebleGroup.add(boxMesh)
+  renderMueble()
 
-    const legGeo = new THREE.BoxGeometry(0.02, h * 0.2, 0.02)
-    const legPositions = [
-      [-w / 2 + 0.03, -h / 2 + 0.1, -d / 2 + 0.03],
-      [w / 2 - 0.03, -h / 2 + 0.1, -d / 2 + 0.03],
-      [-w / 2 + 0.03, -h / 2 + 0.1, d / 2 - 0.03],
-      [w / 2 - 0.03, -h / 2 + 0.1, d / 2 - 0.03],
-    ]
-    legPositions.forEach(([x, y, z]) => {
-      const leg = new THREE.Mesh(legGeo, material)
-      leg.position.set(x, y, z)
-      muebleGroup.add(leg)
-    })
-  } else if (form.tipo === 'estante') {
-    const baseGeo = new THREE.BoxGeometry(w, 0.02, d)
-    const baseMesh = new THREE.Mesh(baseGeo, material)
-    baseMesh.position.y = -h / 2
-    muebleGroup.add(baseMesh)
-
-    const sideGeo = new THREE.BoxGeometry(0.02, h, d)
-    const sideLeft = new THREE.Mesh(sideGeo, material)
-    sideLeft.position.set(-w / 2 + 0.01, 0, 0)
-    muebleGroup.add(sideLeft)
-    const sideRight = new THREE.Mesh(sideGeo, material)
-    sideRight.position.set(w / 2 - 0.01, 0, 0)
-    muebleGroup.add(sideRight)
-
-    const shelfCount = Math.max(2, Math.floor(h / 0.3))
-    const shelfGeo = new THREE.BoxGeometry(w - 0.04, 0.02, d)
-    for (let i = 1; i <= shelfCount; i++) {
-      const shelf = new THREE.Mesh(shelfGeo, material)
-      shelf.position.y = -h / 2 + (i * h) / (shelfCount + 1)
-      muebleGroup.add(shelf)
-    }
-  } else if (form.tipo === 'cocina') {
-    const modules = 3
-    const moduleW = w / modules
-    const moduleGeo = new THREE.BoxGeometry(moduleW - 0.02, h, d)
-    for (let i = 0; i < modules; i++) {
-      const moduleMesh = new THREE.Mesh(moduleGeo, material)
-      moduleMesh.position.x = -w / 2 + moduleW / 2 + i * moduleW
-      muebleGroup.add(moduleMesh)
-    }
+  function animate() {
+    requestAnimationFrame(animate)
+    controls.update()
+    renderer.render(scene, camera)
   }
-
-  // Añadir grupo y ajustar cámara
-  scene.add(muebleGroup)
-
-  const maxDim = Math.max(w, h, d)
-  camera.position.set(0, 0, maxDim * 2)
-  controls.target.set(0, 0, 0)
-  controls.update()
-}
-
-function animate() {
-  animationId = requestAnimationFrame(animate)
-  if (muebleGroup) muebleGroup.rotation.y += 0.005
-  controls.update()
-  renderer.render(scene, camera)
-}
-
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight
-  camera.updateProjectionMatrix()
-  renderer.setSize(window.innerWidth, window.innerHeight)
-}
-
-function handleSubmit() {
-  generateModel()
-  showModal.value = false
-}
-
-function closeModal() {
-  showModal.value = false
-}
-
-onMounted(() => {
-  initScene()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', onResize)
-  cancelAnimationFrame(animationId)
-  if (renderer) renderer.dispose()
+  animate()
 })
 </script>
 
-<style scoped>
-* {
-  box-sizing: border-box;
-}
-
-.app {
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background: #f5f5f5;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 100vw;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  width: 320px;
-  max-width: 90vw;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-fieldset {
-  border: none;
-  padding: 0;
+<style>
+body, html, #app {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: sans-serif;
 }
-
-legend {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.form-group {
+.sidebar {
+  width: 200px;
+  background: #f8f8f8;
+  padding: 10px;
+  box-sizing: border-box;
+  border-right: 1px solid #ccc;
   display: flex;
   flex-direction: column;
-  font-weight: 600;
-  font-size: 0.95rem;
+  gap: 10px;
 }
-
-.form-group select,
-.form-group input {
-  margin-top: 0.3rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  border: 1.5px solid #ccc;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.form-group select:focus,
-.form-group input:focus {
-  outline: none;
-  border-color: #7a5700;
-}
-
-.color-select {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.color-select > span {
-  min-width: 60px;
-}
-
-.color-select select {
-  flex: 1;
-}
-
-.color-preview {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  border: 1.5px solid #ccc;
-  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-  transition: background-color 0.3s ease;
-}
-
-.btn-primary,
-.btn-secondary {
-  cursor: pointer;
-  padding: 0.6rem 1.2rem;
-  font-weight: 700;
-  border-radius: 6px;
-  border: none;
-  font-size: 1rem;
-  transition: background-color 0.3s ease;
-  user-select: none;
-}
-
-.btn-primary {
-  background-color: #7a5700;
-  color: white;
-  margin-top: 1rem;
-}
-
-.btn-primary:hover {
-  background-color: #7a5700;
-}
-
-.btn-secondary {
-  background-color: #f0f0f0;
-  color: #444;
-  margin: 1rem auto;
-  display: block;
-  width: fit-content;
-}
-
-.btn-secondary:hover {
-  background-color: #dcdcdc;
-}
-
-.controls-container {
-  padding: 1rem;
-  text-align: center;
-  background: white;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-.viewer {
-  flex-grow: 1;
-  background: #ddd;
+.sidebar label, select {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  font-size: 14px;
 }
-
-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
+button {
+  padding: 5px;
+  cursor: pointer;
 }
-
+.color-selector {
+  display: flex;
+  gap: 5px;
+  margin: 5px 0;
+}
+.color-btn {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #333;
+  cursor: pointer;
+}
 </style>
