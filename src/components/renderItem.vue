@@ -22,7 +22,7 @@
                   <span class="step-label">{{ step.label }}</span>
                 </div>
               </div>
-              <button @click="closeModal" class="close-btn">&times;</button>
+              <button @click="closeModal" class="close-btn" aria-label="Cerrar modal">&times;</button>
             </div>
 
             <!-- Contenido del Wizard -->
@@ -39,6 +39,10 @@
                       @click="selectFurniture(furniture.id)"
                       class="furniture-card"
                       :class="{ selected: form.tipo === furniture.id }"
+                      role="button"
+                      tabindex="0"
+                      @keydown.enter="selectFurniture(furniture.id)"
+                      @keydown.space="selectFurniture(furniture.id)"
                     >
                       <div class="furniture-icon">{{ furniture.icon }}</div>
                       <h3>{{ furniture.name }}</h3>
@@ -131,7 +135,6 @@
                   <div class="dimension-preview">
                     <div class="preview-box" :style="previewBoxStyle">
                       <span>{{ ((form.ancho / 100) * (form.profundidad / 100)).toFixed(2) }} m²</span>
-
                     </div>
                   </div>
                 </div>
@@ -331,6 +334,10 @@
                         @click="form.color = colorKey"
                         class="color-option"
                         :class="{ selected: form.color === colorKey }"
+                        role="button"
+                        tabindex="0"
+                        @keydown.enter="form.color = colorKey"
+                        @keydown.space="form.color = colorKey"
                       >
                         <div 
                           class="color-swatch" 
@@ -419,13 +426,19 @@
     <Transition name="slide">
       <div v-if="!showModal" class="floating-controls">
         <button @click="openModal" class="btn-floating main">
-          🎛️ Personalizar
+          🎛️ <span class="btn-text">Personalizar</span>
+        </button>
+        <button @click="generateRandomFurniture" class="btn-floating new-furniture" :disabled="isGenerating">
+          🎲 <span class="btn-text">{{ isGenerating ? 'Generando...' : 'Nuevo Mueble' }}</span>
         </button>
         <button @click="resetCamera" class="btn-floating secondary">
-          🔄 Reset Vista
+          🔄 <span class="btn-text">Reset Vista</span>
         </button>
         <button @click="toggleWireframe" class="btn-floating secondary">
-          {{ wireframeMode ? '🎨' : '📐' }} {{ wireframeMode ? 'Sólido' : 'Wireframe' }}
+          {{ wireframeMode ? '🎨' : '📐' }} <span class="btn-text">{{ wireframeMode ? 'Sólido' : 'Wireframe' }}</span>
+        </button>
+        <button @click="downloadFurnitureData" class="btn-floating download">
+          📥 <span class="btn-text">Descargar</span>
         </button>
       </div>
     </Transition>
@@ -436,7 +449,7 @@
       
       <!-- Panel de información mejorado -->
       <Transition name="fade">
-        <div v-if="!showModal" class="info-panel-enhanced">
+        <div v-if="!showModal && !isMobileView" class="info-panel-enhanced">
           <div class="info-header">
             <h3>📊 {{ currentFurniture?.name || 'Mueble' }}</h3>
             <div class="info-status" :class="{ loading: isGenerating }">
@@ -489,9 +502,8 @@
 
             <div class="info-section">
               <div class="info-row volume">
-                <span>📏 Volumen:</span>
-               <strong>{{ ((form.ancho / 100) * (form.profundidad / 100)).toFixed(2) }} m²</strong>
-
+                <span>📏 Área:</span>
+                <strong>{{ ((form.ancho / 100) * (form.profundidad / 100)).toFixed(2) }} m²</strong>
               </div>
             </div>
           </div>
@@ -500,7 +512,7 @@
 
       <!-- Controles de ayuda mejorados -->
       <Transition name="fade">
-        <div v-if="!showModal" class="controls-help-enhanced">
+        <div v-if="!showModal && !isMobileView" class="controls-help-enhanced">
           <div class="help-item">
             <span class="help-icon">🖱️</span>
             <span><strong>Arrastrar:</strong> Rotar modelo</span>
@@ -515,12 +527,28 @@
           </div>
         </div>
       </Transition>
+
+      <!-- Mobile Info Panel -->
+      <Transition name="fade">
+        <div v-if="!showModal && isMobileView" class="mobile-info-panel">
+          <div class="mobile-info-header" @click="toggleMobileInfo">
+            <h3>{{ currentFurniture?.name || 'Mueble' }} - {{ form.ancho }}×{{ form.alto }}×{{ form.profundidad }}cm</h3>
+            <button class="mobile-toggle">{{ showMobileInfo ? '−' : '+' }}</button>
+          </div>
+          <div v-if="showMobileInfo" class="mobile-info-content">
+            <div class="mobile-specs">
+              <span>Material: {{ materialName }}</span>
+              <span>Área: {{ ((form.ancho / 100) * (form.profundidad / 100)).toFixed(2) }} m²</span>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import * as THREE from 'three'
 
 // Estados reactivos
@@ -529,6 +557,13 @@ const canvas = ref(null)
 const currentStep = ref(0)
 const isGenerating = ref(false)
 const wireframeMode = ref(false)
+const isMobileView = ref(false)
+const showMobileInfo = ref(false)
+
+// Detectar dispositivos móviles
+const checkMobileView = () => {
+  isMobileView.value = window.innerWidth < 768 || 'ontouchstart' in window
+}
 
 // Pasos del wizard
 const wizardSteps = [
@@ -579,7 +614,7 @@ const form = reactive({
 // Referencias de Three.js
 let scene, camera, renderer, controls, muebleGroup, animationId
 
-// Colores de madera mejorados con más información
+// Colores de madera mejorados
 const woodColors = {
   nogal: { 
     color: '#4A2C17', 
@@ -639,7 +674,7 @@ const woodColors = {
   }
 }
 
-// Opciones de muebles con más detalles
+// Opciones de muebles
 const furnitureOptions = ref([
   { 
     id: 'escritorio', 
@@ -721,7 +756,7 @@ const previewBoxStyle = computed(() => {
   }
 })
 
-// Control de cámara mejorado
+// Control de cámara mejorado con anti-blur
 class AdvancedControls {
   constructor(camera, domElement) {
     this.camera = camera
@@ -736,11 +771,11 @@ class AdvancedControls {
     this.targetDistance = 4
     this.currentDistance = 4
     
-    this.minDistance = 1
-    this.maxDistance = 10
-    this.rotationSpeed = 0.01
-    this.zoomSpeed = 0.1
-    this.dampingFactor = 0.1
+    this.minDistance = 1.5
+    this.maxDistance = 8
+    this.rotationSpeed = 0.008
+    this.zoomSpeed = 0.08
+    this.dampingFactor = 0.12
 
     this.bindEvents()
   }
@@ -754,15 +789,16 @@ class AdvancedControls {
     this.domElement.addEventListener('mousedown', this.onMouseDown)
     this.domElement.addEventListener('mousemove', this.onMouseMove)
     this.domElement.addEventListener('mouseup', this.onMouseUp)
-    this.domElement.addEventListener('wheel', this.onWheel)
+    this.domElement.addEventListener('wheel', this.onWheel, { passive: false })
     
     // Touch events for mobile
-    this.domElement.addEventListener('touchstart', this.onTouchStart.bind(this))
-    this.domElement.addEventListener('touchmove', this.onTouchMove.bind(this))
+    this.domElement.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false })
+    this.domElement.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false })
     this.domElement.addEventListener('touchend', this.onTouchEnd.bind(this))
   }
 
   onMouseDown(event) {
+    event.preventDefault()
     this.isMouseDown = true
     this.mouseX = event.clientX
     this.mouseY = event.clientY
@@ -770,6 +806,8 @@ class AdvancedControls {
 
   onMouseMove(event) {
     if (!this.isMouseDown) return
+    event.preventDefault()
+    
     const deltaX = event.clientX - this.mouseX
     const deltaY = event.clientY - this.mouseY
     this.targetRotationY += deltaX * this.rotationSpeed
@@ -779,7 +817,8 @@ class AdvancedControls {
     this.mouseY = event.clientY
   }
 
-  onMouseUp() {
+  onMouseUp(event) {
+    event.preventDefault()
     this.isMouseDown = false
   }
 
@@ -790,10 +829,19 @@ class AdvancedControls {
   }
 
   onTouchStart(event) {
+    event.preventDefault()
     if (event.touches.length === 1) {
       this.isMouseDown = true
       this.mouseX = event.touches[0].clientX
       this.mouseY = event.touches[0].clientY
+    } else if (event.touches.length === 2) {
+      // Pinch to zoom
+      const touch1 = event.touches[0]
+      const touch2 = event.touches[1]
+      this.lastTouchDistance = Math.hypot(
+        touch1.clientX - touch2.clientX,
+        touch1.clientY - touch2.clientY
+      )
     }
   }
 
@@ -802,16 +850,33 @@ class AdvancedControls {
     if (event.touches.length === 1 && this.isMouseDown) {
       const deltaX = event.touches[0].clientX - this.mouseX
       const deltaY = event.touches[0].clientY - this.mouseY
-      this.targetRotationY += deltaX * this.rotationSpeed
-      this.targetRotationX += deltaY * this.rotationSpeed
+      this.targetRotationY += deltaX * this.rotationSpeed * 1.5
+      this.targetRotationX += deltaY * this.rotationSpeed * 1.5
       this.targetRotationX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, this.targetRotationX))
       this.mouseX = event.touches[0].clientX
       this.mouseY = event.touches[0].clientY
+    } else if (event.touches.length === 2) {
+      // Pinch to zoom
+      const touch1 = event.touches[0]
+      const touch2 = event.touches[1]
+      const currentDistance = Math.hypot(
+        touch1.clientX - touch2.clientX,
+        touch1.clientY - touch2.clientY
+      )
+      
+      if (this.lastTouchDistance) {
+        const deltaDistance = this.lastTouchDistance - currentDistance
+        this.targetDistance += deltaDistance * 0.01
+        this.targetDistance = Math.max(this.minDistance, Math.min(this.maxDistance, this.targetDistance))
+      }
+      this.lastTouchDistance = currentDistance
     }
   }
 
-  onTouchEnd() {
+  onTouchEnd(event) {
+    event.preventDefault()
     this.isMouseDown = false
+    this.lastTouchDistance = null
   }
 
   reset() {
@@ -847,7 +912,7 @@ class AdvancedControls {
   }
 }
 
-// Función mejorada para crear material de madera
+// Función para crear material de madera
 const createWoodMaterial = (colorKey, wireframe = false) => {
   const wood = woodColors[colorKey]
   const material = new THREE.MeshStandardMaterial({
@@ -857,56 +922,53 @@ const createWoodMaterial = (colorKey, wireframe = false) => {
     wireframe: wireframe
   })
   
-  // Aplicar acabados
   if (form.config.barniz) {
-    material.roughness *= 0.5 // Más brillante con barniz
+    material.roughness *= 0.5
   }
   
   return material
 }
 
-// Funciones mejoradas para crear diferentes tipos de muebles
-
+// Funciones para crear diferentes tipos de muebles
 const createEscritorio = (group, w, h, d, material) => {
   // Tablero principal
-  const topGeo = new THREE.BoxGeometry(w, 0.03, d);
-  const top = new THREE.Mesh(topGeo, material);
-  top.position.y = h - 0.015;
-  group.add(top);
+  const topGeo = new THREE.BoxGeometry(w, 0.03, d)
+  const top = new THREE.Mesh(topGeo, material)
+  top.position.y = h - 0.015
+  group.add(top)
 
-  // Panel izquierdo (soporte)
-  const leftPanelGeo = new THREE.BoxGeometry(0.03, h - 0.03, d * 0.95);
-  const leftPanel = new THREE.Mesh(leftPanelGeo, material);
-  leftPanel.position.set(-w/2 + 0.015, (h-0.03)/2, 0);
-  group.add(leftPanel);
+  // Panel izquierdo
+  const leftPanelGeo = new THREE.BoxGeometry(0.03, h - 0.03, d * 0.95)
+  const leftPanel = new THREE.Mesh(leftPanelGeo, material)
+  leftPanel.position.set(-w/2 + 0.015, (h-0.03)/2, 0)
+  group.add(leftPanel)
 
   // Cajonera derecha
-  const drawerUnitWidth = 0.4; // ancho aproximado de la cajonera
-  const drawerUnitDepth = d * 0.95;
-  const drawerUnitGeo = new THREE.BoxGeometry(drawerUnitWidth, h - 0.03, drawerUnitDepth);
-  const drawerUnit = new THREE.Mesh(drawerUnitGeo, material);
-  drawerUnit.position.set(w/2 - drawerUnitWidth/2, (h-0.03)/2, 0);
-  group.add(drawerUnit);
+  const drawerUnitWidth = 0.4
+  const drawerUnitDepth = d * 0.95
+  const drawerUnitGeo = new THREE.BoxGeometry(drawerUnitWidth, h - 0.03, drawerUnitDepth)
+  const drawerUnit = new THREE.Mesh(drawerUnitGeo, material)
+  drawerUnit.position.set(w/2 - drawerUnitWidth/2, (h-0.03)/2, 0)
+  group.add(drawerUnit)
 
   // Cajones individuales
-  const numDrawers = 3;
-  const drawerHeight = (h - 0.05) / numDrawers - 0.02;
+  const numDrawers = Math.max(1, form.config.cajones)
+  const drawerHeight = (h - 0.05) / numDrawers - 0.02
   for (let i = 0; i < numDrawers; i++) {
-    const drawerGeo = new THREE.BoxGeometry(drawerUnitWidth * 0.9, drawerHeight, drawerUnitDepth * 0.9);
-    const drawer = new THREE.Mesh(drawerGeo, material);
-    const yPos = h - 0.05 - drawerHeight/2 - i * (drawerHeight + 0.01);
-    drawer.position.set(w/2 - drawerUnitWidth/2, yPos, 0);
-    group.add(drawer);
+    const drawerGeo = new THREE.BoxGeometry(drawerUnitWidth * 0.9, drawerHeight, drawerUnitDepth * 0.9)
+    const drawer = new THREE.Mesh(drawerGeo, material)
+    const yPos = h - 0.05 - drawerHeight/2 - i * (drawerHeight + 0.01)
+    drawer.position.set(w/2 - drawerUnitWidth/2, yPos, 0)
+    group.add(drawer)
 
     // Manija
-    const handleGeo = new THREE.BoxGeometry(0.15, 0.02, 0.02);
-    const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.2 });
-    const handle = new THREE.Mesh(handleGeo, handleMaterial);
-    handle.position.set(w/2 - drawerUnitWidth/2, yPos, drawerUnitDepth/2 - 0.02);
-    group.add(handle);
+    const handleGeo = new THREE.BoxGeometry(0.15, 0.02, 0.02)
+    const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8, roughness: 0.2 })
+    const handle = new THREE.Mesh(handleGeo, handleMaterial)
+    handle.position.set(w/2 - drawerUnitWidth/2, yPos, drawerUnitDepth/2 - 0.02)
+    group.add(handle)
   }
-};
-
+}
 
 const createEstante = (group, w, h, d, material) => {
   // Laterales
@@ -934,25 +996,12 @@ const createEstante = (group, w, h, d, material) => {
   group.add(bottomShelf)
 
   // Estantes configurables
-  const shelfSpacing = h / (form.config.estantes + 1)
-  for (let i = 1; i <= form.config.estantes; i++) {
+  const numShelves = Math.max(1, form.config.estantes)
+  const shelfSpacing = h / (numShelves + 1)
+  for (let i = 1; i <= numShelves; i++) {
     const shelf = new THREE.Mesh(shelfGeo, material)
     shelf.position.y = i * shelfSpacing
     group.add(shelf)
-    
-    // Soportes ajustables si está activado
-    if (form.config.ajustables) {
-      const supportGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.02)
-      const supportMaterial = new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.8 })
-      
-      for (let j = 0; j < 4; j++) {
-        const support = new THREE.Mesh(supportGeo, supportMaterial)
-        const xPos = j < 2 ? -w/2 + 0.02 : w/2 - 0.02
-        const zPos = j % 2 === 0 ? -d/4 : d/4
-        support.position.set(xPos, i * shelfSpacing - 0.015, zPos)
-        group.add(support)
-      }
-    }
   }
 
   // Puertas si están configuradas
@@ -970,12 +1019,6 @@ const createEstante = (group, w, h, d, material) => {
           opacity: 0.3, 
           metalness: 0.1, 
           roughness: 0.0 
-        })
-      } else if (form.config.tipoPuertas === 'rejilla') {
-        doorMaterial = new THREE.MeshStandardMaterial({ 
-          color: material.color, 
-          transparent: true, 
-          opacity: 0.7 
         })
       }
       
@@ -995,14 +1038,11 @@ const createEstante = (group, w, h, d, material) => {
 }
 
 const createMesa = (group, w, h, d, material) => {
-  // Forma del tablero
+  // Tablero
   let topGeo
   if (form.config.formaTablero === 'redonda') {
     const radius = Math.min(w, d) / 2
     topGeo = new THREE.CylinderGeometry(radius, radius, 0.08, 32)
-  } else if (form.config.formaTablero === 'ovalada') {
-    topGeo = new THREE.CylinderGeometry(w/2, d/2, 0.08, 32)
-    topGeo.scale(1, 1, d/w)
   } else {
     topGeo = new THREE.BoxGeometry(w, 0.08, d)
   }
@@ -1010,28 +1050,6 @@ const createMesa = (group, w, h, d, material) => {
   const top = new THREE.Mesh(topGeo, material)
   top.position.y = h - 0.04
   group.add(top)
-
-  // Extensión si está activada
-  if (form.config.extensible) {
-    const extensionGeo = new THREE.BoxGeometry(w * 0.3, 0.06, d)
-    const extension = new THREE.Mesh(extensionGeo, material)
-    extension.position.set(w * 0.65, h - 0.07, 0)
-    group.add(extension)
-  }
-
-  // Cajón central si está activado
-  if (form.config.cajonCentral) {
-    const drawerGeo = new THREE.BoxGeometry(w * 0.4, 0.12, d * 0.6)
-    const drawer = new THREE.Mesh(drawerGeo, material)
-    drawer.position.set(0, h - 0.15, 0)
-    group.add(drawer)
-
-    const handleGeo = new THREE.BoxGeometry(0.1, 0.02, 0.02)
-    const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 0.8 })
-    const handle = new THREE.Mesh(handleGeo, handleMaterial)
-    handle.position.set(0, h - 0.09, d/2 - 0.01)
-    group.add(handle)
-  }
 
   // Patas según el tipo
   const legHeight = h - 0.08
@@ -1050,39 +1068,6 @@ const createMesa = (group, w, h, d, material) => {
       leg.position.set(x, y, z)
       group.add(leg)
     })
-  } else if (form.config.tipoPatas === 'cuadrada') {
-    const legGeo = new THREE.BoxGeometry(0.06, legHeight, 0.06)
-    const legPositions = [
-      [-w/2 + 0.15, legHeight/2, -d/2 + 0.15],
-      [w/2 - 0.15, legHeight/2, -d/2 + 0.15],
-      [-w/2 + 0.15, legHeight/2, d/2 - 0.15],
-      [w/2 - 0.15, legHeight/2, d/2 - 0.15]
-    ]
-    
-    legPositions.forEach(([x, y, z]) => {
-      const leg = new THREE.Mesh(legGeo, material)
-      leg.position.set(x, y, z)
-      group.add(leg)
-    })
-  } else if (form.config.tipoPatas === 'cruz') {
-    const crossGeo = new THREE.BoxGeometry(w * 0.8, 0.08, 0.08)
-    const cross1 = new THREE.Mesh(crossGeo, material)
-    cross1.position.y = legHeight/2
-    group.add(cross1)
-    
-    const crossGeo2 = new THREE.BoxGeometry(0.08, 0.08, d * 0.8)
-    const cross2 = new THREE.Mesh(crossGeo2, material)
-    cross2.position.y = legHeight/2
-    group.add(cross2)
-  } else if (form.config.tipoPatas === 'trestle') {
-    const trestleGeo = new THREE.BoxGeometry(0.08, legHeight, d * 0.8)
-    const trestle1 = new THREE.Mesh(trestleGeo, material)
-    trestle1.position.set(-w/3, legHeight/2, 0)
-    group.add(trestle1)
-    
-    const trestle2 = new THREE.Mesh(trestleGeo, material)
-    trestle2.position.set(w/3, legHeight/2, 0)
-    group.add(trestle2)
   }
 }
 
@@ -1100,91 +1085,15 @@ const createArmario = (group, w, h, d, material) => {
   interior.position.y = h/2
   group.add(interior)
 
-  // Barras para colgar
-  const barMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8 })
-  for (let i = 0; i < form.config.barras; i++) {
-    const barGeo = new THREE.CylinderGeometry(0.01, 0.01, w - 0.2)
-    const bar = new THREE.Mesh(barGeo, barMaterial)
-    bar.rotation.z = Math.PI / 2
-    bar.position.set(0, h * 0.8 - i * 0.4, -d/3)
-    group.add(bar)
-  }
-
-  // Cajones internos
-  if (form.config.cajones > 0) {
-    const drawerWidth = w - 0.15
-    const drawerHeight = 0.12
-    const drawerDepth = d - 0.15
-    
-    for (let i = 0; i < form.config.cajones; i++) {
-      const drawerGeo = new THREE.BoxGeometry(drawerWidth, drawerHeight, drawerDepth)
-      const drawer = new THREE.Mesh(drawerGeo, material)
-      drawer.position.set(0, 0.2 + i * (drawerHeight + 0.05), 0)
-      group.add(drawer)
-    }
-  }
-
-  // Espejo interior
-  if (form.config.espejo) {
-    const mirrorGeo = new THREE.BoxGeometry(w * 0.4, h * 0.6, 0.01)
-    const mirrorMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xaaaaaa, 
-      metalness: 1.0, 
-      roughness: 0.0 
-    })
-    const mirror = new THREE.Mesh(mirrorGeo, mirrorMaterial)
-    mirror.position.set(-w/4, h * 0.6, -d/2 + 0.03)
-    group.add(mirror)
-  }
-
-  // Iluminación LED
-  if (form.config.iluminacion) {
-    const lightGeo = new THREE.BoxGeometry(w - 0.1, 0.02, 0.02)
-    const lightMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xffffff, 
-      emissive: 0x444444 
-    })
-    const light = new THREE.Mesh(lightGeo, lightMaterial)
-    light.position.set(0, h - 0.1, -d/2 + 0.05)
-    group.add(light)
-  }
-
-  // Puertas según tipo
-  const doorWidth = (w - 0.1) / form.config.puertas
+  // Puertas
+  const doorWidth = (w - 0.1) / Math.max(1, form.config.puertas)
   const doorHeight = h - 0.1
   
-  for (let i = 0; i < form.config.puertas; i++) {
+  for (let i = 0; i < Math.max(1, form.config.puertas); i++) {
     const doorGeo = new THREE.BoxGeometry(doorWidth, doorHeight, 0.03)
     const door = new THREE.Mesh(doorGeo, material)
-    
-    let xOffset = -w/2 + doorWidth/2 + i * doorWidth
-    
-    if (form.config.tipoPuertas === 'corredera') {
-      // Puertas correderas - ligeramente desplazadas
-      door.position.set(xOffset + (i * 0.05), h/2, d/2 + 0.02 + (i * 0.01))
-    } else if (form.config.tipoPuertas === 'plegable') {
-      // Puertas plegables - ángulo ligero
-      door.position.set(xOffset, h/2, d/2 + 0.015)
-      door.rotation.y = (i % 2 === 0) ? 0.1 : -0.1
-    } else {
-      // Puertas batientes - normales
-      door.position.set(xOffset, h/2, d/2 + 0.015)
-    }
-    
+    door.position.set(-w/2 + doorWidth/2 + i * doorWidth, h/2, d/2 + 0.015)
     group.add(door)
-
-    // Manijas según el tipo de puerta
-    const handleGeo = form.config.tipoPuertas === 'corredera' 
-      ? new THREE.BoxGeometry(0.02, 0.15, 0.02)
-      : new THREE.SphereGeometry(0.02)
-    const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9 })
-    const handle = new THREE.Mesh(handleGeo, handleMaterial)
-    handle.position.set(
-      door.position.x + (i % 2 === 0 ? doorWidth/3 : -doorWidth/3), 
-      h * 0.6, 
-      door.position.z + 0.025
-    )
-    group.add(handle)
   }
 }
 
@@ -1195,21 +1104,11 @@ const createBanco = (group, w, h, d, material) => {
   seat.position.y = h - 0.04
   group.add(seat)
 
-  // Base/estructura
+  // Base
   const baseGeo = new THREE.BoxGeometry(w - 0.1, h - 0.08, d - 0.1)
   const base = new THREE.Mesh(baseGeo, material)
   base.position.y = (h - 0.08) / 2
   group.add(base)
-
-  // Detalles decorativos
-  const detailGeo = new THREE.BoxGeometry(w - 0.2, 0.05, 0.05)
-  const detail1 = new THREE.Mesh(detailGeo, material)
-  detail1.position.set(0, h/3, d/2 - 0.075)
-  group.add(detail1)
-  
-  const detail2 = new THREE.Mesh(detailGeo, material)
-  detail2.position.set(0, h/3, -d/2 + 0.075)
-  group.add(detail2)
 }
 
 const createSilla = (group, w, h, d, material) => {
@@ -1239,28 +1138,13 @@ const createSilla = (group, w, h, d, material) => {
     leg.position.set(x, y, z)
     group.add(leg)
   })
-
-  // Refuerzos entre patas
-  const reinforceGeo = new THREE.CylinderGeometry(0.01, 0.01, w - 0.1)
-  const reinforceMaterial = new THREE.MeshStandardMaterial({ color: material.color })
-  
-  const reinforce1 = new THREE.Mesh(reinforceGeo, reinforceMaterial)
-  reinforce1.rotation.z = Math.PI / 2
-  reinforce1.position.set(0, h * 0.15, d/2 - 0.05)
-  group.add(reinforce1)
-  
-  const reinforce2 = new THREE.Mesh(reinforceGeo, reinforceMaterial)
-  reinforce2.rotation.z = Math.PI / 2
-  reinforce2.position.set(0, h * 0.35, -d/2 + 0.05)
-  group.add(reinforce2)
 }
 
-// Generar modelo 3D mejorado
+// Generar modelo 3D
 const generateModel = async () => {
   isGenerating.value = true
   
-  // Pequeño delay para mostrar el indicador de carga
-  await new Promise(resolve => setTimeout(resolve, 100))
+  await nextTick()
   
   if (muebleGroup) {
     scene.remove(muebleGroup)
@@ -1306,16 +1190,95 @@ const generateModel = async () => {
 
   scene.add(muebleGroup)
 
-  // Ajustar cámara según el tamaño del mueble
+  // Ajustar cámara según el tamaño
   const maxDim = Math.max(w, h, d)
-  const targetDistance = maxDim * 2.5 + 1
+  const targetDistance = Math.max(2.5, maxDim * 2 + 1)
   if (controls) {
     controls.targetDistance = targetDistance
-  } else {
-    camera.position.z = targetDistance
+    controls.currentDistance = targetDistance
   }
   
   isGenerating.value = false
+}
+
+// Generar mueble aleatorio
+const generateRandomFurniture = async () => {
+  if (isGenerating.value) return
+  
+  isGenerating.value = true
+  
+  // Seleccionar tipo aleatorio
+  const randomFurniture = furnitureOptions.value[Math.floor(Math.random() * furnitureOptions.value.length)]
+  selectFurniture(randomFurniture.id)
+  
+  // Dimensiones aleatorias dentro de límites
+  const limits = dimensionLimits.value
+  form.ancho = Math.floor(Math.random() * (limits.ancho.max - limits.ancho.min) + limits.ancho.min)
+  form.alto = Math.floor(Math.random() * (limits.alto.max - limits.alto.min) + limits.alto.min)
+  form.profundidad = Math.floor(Math.random() * (limits.profundidad.max - limits.profundidad.min) + limits.profundidad.min)
+  
+  // Color aleatorio
+  const colorKeys = Object.keys(woodColors)
+  form.color = colorKeys[Math.floor(Math.random() * colorKeys.length)]
+  
+  // Configuración aleatoria
+  if (form.tipo === 'escritorio') {
+    form.config.cajones = Math.floor(Math.random() * 4) + 1
+    form.config.cerradura = Math.random() > 0.5
+    form.config.gestionCables = Math.random() > 0.3
+  }
+  
+  await generateModel()
+}
+
+// Descargar datos del mueble
+const downloadFurnitureData = () => {
+  const furnitureData = {
+    tipo: form.tipo,
+    nombre: currentFurniture.value?.name,
+    dimensiones: {
+      ancho: form.ancho,
+      alto: form.alto,
+      profundidad: form.profundidad,
+      area: ((form.ancho / 100) * (form.profundidad / 100)).toFixed(2)
+    },
+    material: {
+      tipo: form.color,
+      nombre: materialName.value,
+      propiedades: woodColors[form.color]
+    },
+    configuracion: form.config,
+    fechaCreacion: new Date().toISOString(),
+    version: '1.0'
+  }
+
+  // Descargar JSON
+  const dataStr = JSON.stringify(furnitureData, null, 2)
+  const dataBlob = new Blob([dataStr], { type: 'application/json' })
+  const url = URL.createObjectURL(dataBlob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `mueble-${form.tipo}-${Date.now()}.json`
+  link.click()
+  URL.revokeObjectURL(url)
+
+  // Capturar imagen del canvas
+  if (canvas.value) {
+    try {
+      canvas.value.toBlob((blob) => {
+        if (blob) {
+          const imgUrl = URL.createObjectURL(blob)
+          const imgLink = document.createElement('a')
+          imgLink.href = imgUrl
+          imgLink.download = `mueble-${form.tipo}-${Date.now()}.png`
+          imgLink.click()
+          URL.revokeObjectURL(imgUrl)
+        }
+      })
+    } catch (error) {
+      console.warn('No se pudo capturar la imagen:', error)
+    }
+  }
 }
 
 // Inicializar escena 3D mejorada
@@ -1332,19 +1295,24 @@ const initScene = () => {
     canvas: canvas.value, 
     antialias: true,
     alpha: true,
-    powerPreference: "high-performance"
+    powerPreference: "high-performance",
+    preserveDrawingBuffer: true // Para capturas de pantalla
   })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  
+  // Configuración anti-blur mejorada
+  const pixelRatio = Math.min(window.devicePixelRatio, 2)
+  renderer.setPixelRatio(pixelRatio)
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   renderer.physicallyCorrectLights = true
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 0.8
+  renderer.outputEncoding = THREE.sRGBEncoding
 
   controls = new AdvancedControls(camera, canvas.value)
 
-  // Iluminación mejorada
+  // Iluminación optimizada
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
   scene.add(ambientLight)
 
@@ -1364,12 +1332,7 @@ const initScene = () => {
   const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6)
   scene.add(hemisphereLight)
 
-  // Luz de relleno
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3)
-  fillLight.position.set(-5, 5, -5)
-  scene.add(fillLight)
-
-  // Suelo mejorado
+  // Suelo
   const floorGeometry = new THREE.PlaneGeometry(20, 20)
   const floorMaterial = new THREE.MeshLambertMaterial({ 
     color: 0x666666,
@@ -1381,13 +1344,6 @@ const initScene = () => {
   floor.position.y = -1
   floor.receiveShadow = true
   scene.add(floor)
-
-  // Grid de referencia
-  const gridHelper = new THREE.GridHelper(10, 20, 0x888888, 0x444444)
-  gridHelper.position.y = -0.99
-  gridHelper.material.transparent = true
-  gridHelper.material.opacity = 0.3
-  scene.add(gridHelper)
 
   animate()
   generateModel()
@@ -1406,15 +1362,19 @@ const animate = () => {
 
 // Redimensionar mejorado
 const handleResize = () => {
+  checkMobileView()
+  
   if (camera && renderer) {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
+    
+    const pixelRatio = Math.min(window.devicePixelRatio, 2)
+    renderer.setPixelRatio(pixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
   }
 }
 
 // Métodos del wizard y UI
-
 const selectFurniture = (furnitureId) => {
   const furniture = furnitureOptions.value.find(f => f.id === furnitureId)
   if (furniture) {
@@ -1471,7 +1431,7 @@ const incrementValue = (key) => {
 }
 
 const decrementValue = (key) => {
-  const min = key === 'estantes' || key === 'puertas' && form.tipo === 'armario' ? 1 : 0
+  const min = key === 'estantes' || (key === 'puertas' && form.tipo === 'armario') ? 1 : 0
   if (form.config[key] > min) form.config[key]--
 }
 
@@ -1513,6 +1473,10 @@ const toggleWireframe = () => {
   generateModel()
 }
 
+const toggleMobileInfo = () => {
+  showMobileInfo.value = !showMobileInfo.value
+}
+
 // Watchers optimizados
 watch([
   () => form.ancho, 
@@ -1529,6 +1493,7 @@ watch([
 
 // Lifecycle hooks
 onMounted(() => {
+  checkMobileView()
   initScene()
   window.addEventListener('resize', handleResize)
 })
@@ -1560,7 +1525,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -1572,7 +1536,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(135deg, gray 0%, black 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
 }
 
@@ -1594,9 +1558,9 @@ onUnmounted(() => {
 .modal {
   background: rgba(255, 255, 255, 0.98);
   border-radius: 24px;
-  width: 90vw;
-  max-width: 800px;
-  max-height: 90vh;
+  width: 95vw;
+  max-width: 900px;
+  max-height: 95vh;
   overflow: hidden;
   box-shadow: 0 32px 64px rgba(0,0,0,0.3);
   backdrop-filter: blur(20px);
@@ -1606,35 +1570,36 @@ onUnmounted(() => {
 }
 
 .modal-header {
-  background: linear-gradient(135deg, gray, black);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   position: relative;
 }
 
 .modal-header h1 {
-  font-size: 2rem;
-  margin-bottom: 1.5rem;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  margin-bottom: 1rem;
   font-weight: 700;
 }
 
 .step-indicator {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .step {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
 }
 
 .step.active {
@@ -1649,13 +1614,13 @@ onUnmounted(() => {
 .step-number {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .close-btn {
@@ -1665,10 +1630,10 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.2);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -1681,90 +1646,91 @@ onUnmounted(() => {
 .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .wizard-step {
-  min-height: 400px;
+  min-height: 300px;
 }
 
 .wizard-step h2 {
-  font-size: 1.5rem;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
   color: #2c3e50;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
 
 /* Paso 1: Selección de Muebles */
 .furniture-grid-enhanced {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
 }
 
 .furniture-card {
   background: white;
   border: 3px solid rgba(102, 126, 234, 0.2);
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 1rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  min-height: 44px;
 }
 
 .furniture-card:hover {
-  transform: translateY(-8px);
-  border-color: #000000;
-  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+  transform: translateY(-4px);
+  border-color: #667eea;
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
 }
 
 .furniture-card.selected {
   border-color: #e74c3c;
   background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.05));
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 .furniture-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+  margin-bottom: 0.5rem;
   display: block;
 }
 
 .furniture-card h3 {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 2.5vw, 1.2rem);
   color: #2c3e50;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .furniture-card p {
   color: #7f8c8d;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  margin-bottom: 0.5rem;
 }
 
 .furniture-preview {
   background: rgba(102, 126, 234, 0.1);
-  border-radius: 0px;
-  padding: 0.5rem;
-  font-size: 0.8rem;
-  color: gray;
+  border-radius: 8px;
+  padding: 0.3rem;
+  font-size: clamp(0.6rem, 1.8vw, 0.8rem);
+  color: #667eea;
   font-weight: 600;
 }
 
-/* Paso 2: Dimensiones */
+/* Dimensiones */
 .dimensions-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
+  gap: 1.5rem;
   max-width: 600px;
   margin: 0 auto;
 }
 
 .dimension-group {
   background: white;
-  border-radius: 0px;
-  padding: 1.5rem;
+  border-radius: 16px;
+  padding: 1.2rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
@@ -1775,11 +1741,7 @@ onUnmounted(() => {
   font-weight: 600;
   color: #2c3e50;
   margin-bottom: 1rem;
-  font-size: 1.1rem;
-}
-
-.dimension-icon {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
 }
 
 .dimension-control-enhanced {
@@ -1791,9 +1753,9 @@ onUnmounted(() => {
 .dimension-slider {
   -webkit-appearance: none;
   appearance: none;
-  height: 8px;
-  background: linear-gradient(90deg, gray, white);
-  border-radius: 0px;
+  height: 12px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 6px;
   outline: none;
   cursor: pointer;
 }
@@ -1801,8 +1763,8 @@ onUnmounted(() => {
 .dimension-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   background: white;
   border-radius: 50%;
   cursor: pointer;
@@ -1811,18 +1773,15 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.dimension-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-}
-
 .dimension-input {
-  padding: 1rem;
+  padding: 0.8rem;
   border: 2px solid rgba(102, 126, 234, 0.2);
   border-radius: 12px;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
   text-align: center;
   font-weight: 600;
   transition: all 0.3s ease;
+  min-height: 44px;
 }
 
 .dimension-input:focus {
@@ -1833,35 +1792,35 @@ onUnmounted(() => {
 
 .dimension-preview {
   text-align: center;
-  margin-top: 2rem;
+  margin-top: 1.5rem;
 }
 
 .preview-box {
   margin: 0 auto;
-  border-radius: 0px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
   min-width: 60px;
   min-height: 40px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
-/* Paso 3: Configuración */
+/* Configuración */
 .config-section {
   background: white;
-  border-radius: 0px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 1.5rem;
   box-shadow: 0 8px 30px rgba(0,0,0,0.1);
 }
 
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
 .config-item {
@@ -1870,8 +1829,11 @@ onUnmounted(() => {
   align-items: center;
   padding: 1rem;
   background: rgba(102, 126, 234, 0.05);
-  border-radius: 0px;
+  border-radius: 12px;
   border: 1px solid rgba(102, 126, 234, 0.1);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 44px;
 }
 
 .config-item label {
@@ -1880,45 +1842,43 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  flex: 1;
+  min-width: 120px;
 }
 
 .number-selector {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
   background: white;
-  border-radius: 0px;
+  border-radius: 12px;
   padding: 0.5rem;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .number-selector button {
-  background: gray;
+  background: #667eea;
   color: white;
   border: none;
-  border-radius: 0px;
-  width: 32px;
-  height: 32px;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
   font-weight: bold;
   transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
 .number-selector button:hover:not(:disabled) {
   background: #5a67d8;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .number-selector button:disabled {
   background: #bdc3c7;
   cursor: not-allowed;
-}
-
-.number-selector span {
-  font-weight: bold;
-  min-width: 24px;
-  text-align: center;
-  color: #2c3e50;
+  transform: none;
 }
 
 .toggle-switch {
@@ -1931,7 +1891,7 @@ onUnmounted(() => {
 
 .switch {
   display: block;
-  width: 60px;
+  width: 56px;
   height: 32px;
   background: #bdc3c7;
   border-radius: 16px;
@@ -1958,103 +1918,91 @@ onUnmounted(() => {
 }
 
 .toggle-switch input:checked + .switch::after {
-  transform: translateX(28px);
+  transform: translateX(24px);
 }
 
 .select-enhanced {
   background: white;
   border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 0px;
-  padding: 0.7rem;
+  border-radius: 8px;
+  padding: 0.6rem;
   font-weight: 600;
   color: #2c3e50;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 140px;
+  min-width: 120px;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  min-height: 44px;
 }
 
 .select-enhanced:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
-/* Paso 4: Material */
-.material-section {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
+/* Material */
 .color-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .color-option {
   background: white;
   border: 3px solid transparent;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-height: 44px;
 }
 
 .color-option:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
 }
 
 .color-option.selected {
   border-color: #e74c3c;
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 .color-swatch {
-  width: 80px;
-  height: 80px;
-  border-radius:12px;
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.color-swatch::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  flex-shrink: 0;
 }
 
 .color-info h4 {
+  font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+  margin-bottom: 0.3rem;
   color: #2c3e50;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
 }
 
 .color-info p {
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
   color: #7f8c8d;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .material-props {
   display: flex;
   gap: 1rem;
-  font-size: 0.8rem;
+  font-size: clamp(0.6rem, 1.8vw, 0.8rem);
   color: #95a5a6;
+  flex-wrap: wrap;
 }
 
 .finish-options {
   background: white;
-  border-radius: 0px;
+  border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 8px 30px rgba(0,0,0,0.1);
 }
@@ -2063,13 +2011,13 @@ onUnmounted(() => {
   color: #2c3e50;
   margin-bottom: 1.5rem;
   text-align: center;
-  font-size: 1.3rem;
+  font-size: clamp(1rem, 2.8vw, 1.3rem);
 }
 
 .finish-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
 }
 
 .finish-item {
@@ -2078,8 +2026,15 @@ onUnmounted(() => {
   align-items: center;
   padding: 1rem;
   background: rgba(102, 126, 234, 0.05);
-  border-radius: 0x;
+  border-radius: 12px;
   border: 1px solid rgba(102, 126, 234, 0.1);
+  min-height: 44px;
+}
+
+.finish-item label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
 }
 
 /* Navigation */
@@ -2087,22 +2042,27 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 3rem;
-  padding-top: 2rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
   border-top: 2px solid rgba(102, 126, 234, 0.1);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .btn-nav {
-  padding: 1rem 2rem;
+  padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 0px;
+  border-radius: 12px;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 44px;
+  flex: 1;
+  justify-content: center;
 }
 
 .btn-nav.prev {
@@ -2112,7 +2072,6 @@ onUnmounted(() => {
 
 .btn-nav.prev:hover {
   background: #7f8c8d;
-  transform: translateX(-5px);
 }
 
 .btn-nav.next {
@@ -2122,29 +2081,28 @@ onUnmounted(() => {
 
 .btn-nav.next:hover {
   background: #2980b9;
-  transform: translateX(5px);
 }
 
 .btn-nav.generate {
   background: linear-gradient(45deg, #e74c3c, #c0392b);
   color: white;
-  font-size: 1.1rem;
-  padding: 1.2rem 3rem;
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  padding: 1rem 2rem;
 }
 
 .btn-nav.generate:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(231, 76, 60, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
 }
 
 /* Floating Controls */
 .floating-controls {
   position: fixed;
-  top: 2rem;
-  right: 2rem;
+  top: 1rem;
+  right: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   z-index: 100;
 }
 
@@ -2152,28 +2110,50 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.8);
   color: white;
   border: none;
-  border-radius: 50px;
-  padding: 1rem 1.5rem;
+  border-radius: 25px;
+  padding: 0.8rem 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   font-weight: 600;
   white-space: nowrap;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-floating:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-floating.main {
-  background: linear-gradient(45deg, gray, black);
-  font-size: 1.1rem;
+  background: linear-gradient(45deg, #667eea, #764ba2);
 }
 
-.btn-floating:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+.btn-floating.new-furniture {
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
 }
 
-.btn-floating.main:hover {
-  box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+.btn-floating.download {
+  background: linear-gradient(45deg, #f39c12, #e67e22);
+}
+
+.btn-floating.secondary {
+  background: rgba(52, 73, 94, 0.8);
+}
+
+.btn-floating:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.btn-text {
+  display: inline;
 }
 
 /* Viewer */
@@ -2188,40 +2168,42 @@ canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  touch-action: none;
 }
 
-/* Info Panel Enhanced */
+/* Info Panel Desktop */
 .info-panel-enhanced {
   position: absolute;
-  top: 2rem;
-  left: 2rem;
+  top: 1rem;
+  left: 1rem;
   background: rgba(0, 0, 0, 0.9);
   color: white;
-  border-radius: 20px;
+  border-radius: 16px;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  min-width: 320px;
-  max-width: 400px;
+  max-width: 320px;
   overflow: hidden;
 }
 
 .info-header {
-  background: linear-gradient(135deg, gray, black);
-  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .info-header h3 {
-  font-size: 1.2rem;
+  font-size: clamp(0.9rem, 2.5vw, 1.2rem);
   margin: 0;
 }
 
 .info-status {
-  font-size: 0.9rem;
-  padding: 0.3rem 0.8rem;
-  border-radius: 15px;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -2230,17 +2212,12 @@ canvas {
   animation: pulse 1.5s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
 .info-content {
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .info-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .info-section:last-child {
@@ -2249,49 +2226,104 @@ canvas {
 
 .info-section h4 {
   color: #3498db;
-  font-size: 1rem;
-  margin-bottom: 0.8rem;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  margin-bottom: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  padding: 0.3rem 0;
+  margin-bottom: 0.3rem;
+  font-size: clamp(0.7rem, 2vw, 0.9rem);
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .info-row.volume {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
-  margin-top: 1rem;
-  font-size: 1.1rem;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
 }
 
 .spec-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
 }
 
 .spec-item {
   background: rgba(52, 152, 219, 0.1);
-  padding: 0.5rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: 0.4rem;
+  border-radius: 6px;
+  font-size: clamp(0.7rem, 2vw, 0.8rem);
   border-left: 3px solid #3498db;
 }
 
-/* Controls Help Enhanced */
+/* Mobile Info Panel */
+.mobile-info-panel {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.mobile-info-header {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.mobile-info-header h3 {
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  margin: 0;
+}
+
+.mobile-toggle {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-info-content {
+  padding: 0.8rem;
+}
+
+.mobile-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: clamp(0.7rem, 2vw, 0.8rem);
+}
+
+/* Controls Help */
 .controls-help-enhanced {
   position: absolute;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
   background: rgba(0, 0, 0, 0.8);
   color: white;
-  border-radius: 15px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 0.8rem;
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -2299,9 +2331,9 @@ canvas {
 .help-item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.8rem;
-  font-size: 0.9rem;
+  gap: 0.8rem;
+  margin-bottom: 0.4rem;
+  font-size: clamp(0.7rem, 2vw, 0.8rem);
 }
 
 .help-item:last-child {
@@ -2309,9 +2341,10 @@ canvas {
 }
 
 .help-icon {
-  font-size: 1.2rem;
-  width: 24px;
+  font-size: 1rem;
+  width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 /* Transitions */
@@ -2341,97 +2374,121 @@ canvas {
   opacity: 0;
 }
 
-/* Responsive Design */
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
-  .modal {
-    width: 95vw;
-    margin: 1rem;
-  }
-  
-  .modal-header {
-    padding: 1.5rem;
-  }
-  
-  .modal-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .step-indicator {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .step {
-    font-size: 0.8rem;
-    padding: 0.4rem 0.8rem;
-  }
-  
-  .modal-body {
-    padding: 1.5rem;
-  }
-  
-  .furniture-grid-enhanced {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-  }
-  
-  .furniture-card {
-    padding: 1rem;
-  }
-  
-  .furniture-icon {
-    font-size: 2rem;
-  }
-  
-  .config-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .color-grid {
-    grid-template-columns: 1fr;
-  }
-  
   .floating-controls {
-    top: 1rem;
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
     right: 1rem;
+    top: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
   }
   
   .btn-floating {
-    padding: 0.8rem 1.2rem;
-    font-size: 0.9rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  
+  .btn-text {
+    display: none;
+  }
+  
+  .viewer {
+    padding-bottom: 80px;
   }
   
   .info-panel-enhanced {
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
-    min-width: auto;
-    max-width: none;
+    display: none;
   }
   
   .controls-help-enhanced {
-    bottom: 1rem;
-    right: 1rem;
-    left: 1rem;
+    display: none;
+  }
+  
+  .modal {
+    width: 98vw;
+    max-width: none;
+    margin: 0;
+    border-radius: 16px;
+  }
+  
+  .modal-header {
     padding: 1rem;
   }
   
-  .help-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
+  .step-indicator {
+    gap: 0.3rem;
   }
-}
-
-@media (max-width: 480px) {
+  
+  .step {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .furniture-grid-enhanced {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+  }
+  
+  .furniture-card {
+    padding: 0.8rem;
+  }
+  
+  .config-item {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    gap: 0.8rem;
+  }
+  
+  .config-item label {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+  
   .wizard-navigation {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.8rem;
   }
   
   .btn-nav {
     width: 100%;
+  }
+  
+  .color-option {
+    padding: 0.8rem;
+  }
+  
+  .color-swatch {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .material-props {
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .furniture-grid-enhanced {
+    grid-template-columns: 1fr;
   }
   
   .dimensions-grid {
@@ -2442,84 +2499,74 @@ canvas {
     padding: 1rem;
   }
   
-  .finish-grid {
-    grid-template-columns: 1fr;
+  .floating-controls {
+    gap: 0.3rem;
   }
   
-  .color-option {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .color-swatch {
-    width: 60px;
-    height: 60px;
-  }
-}
-
-/* Custom Scrollbar */
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: rgba(0,0,0,0.1);
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.3);
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.5);
-}
-
-/* Loading Animation */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s linear infinite;
-}
-
-/* Focus States for Accessibility */
-.furniture-card:focus,
-.color-option:focus,
-.btn-nav:focus,
-.btn-floating:focus {
-  outline: 3px solid rgba(102, 126, 234, 0.5);
-  outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .modal {
-    background: white;
-    border: 2px solid black;
-  }
-  
-  .furniture-card,
-  .color-option {
-    border: 2px solid black;
-  }
-  
-  .btn-nav,
   .btn-floating {
-    border: 2px solid black;
+    padding: 0.5rem 0.3rem;
+    font-size: 0.6rem;
   }
 }
 
-/* Reduced motion support */
+/* Touch-friendly adjustments */
+@media (hover: none) and (pointer: coarse) {
+  .furniture-card,
+  .color-option,
+  .btn-nav,
+  .btn-floating,
+  .number-selector button,
+  .dimension-input,
+  .select-enhanced {
+    min-height: 48px;
+  }
+  
+  .dimension-slider {
+    height: 16px;
+  }
+  
+  .dimension-slider::-webkit-slider-thumb {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .switch {
+    width: 60px;
+    height: 36px;
+  }
+  
+  .switch::after {
+    width: 30px;
+    height: 30px;
+    top: 3px;
+    left: 3px;
+  }
+  
+  .toggle-switch input:checked + .switch::after {
+    transform: translateX(24px);
+  }
+  
+  .close-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.5rem;
+  }
+  
+  .mobile-toggle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -2530,7 +2577,7 @@ canvas {
   }
 }
 
-/* Dark mode support */
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   .modal {
     background: rgba(45, 55, 72, 0.98);
@@ -2539,72 +2586,103 @@ canvas {
   
   .wizard-step h2,
   .config-item label,
-  .dimension-group label {
+  .dimension-group label,
+  .furniture-card h3,
+  .color-info h4,
+  .finish-item label {
     color: white;
   }
   
   .furniture-card,
   .color-option,
   .config-section,
-  .finish-options {
+  .finish-options,
+  .dimension-group {
     background: rgba(68, 80, 102, 0.8);
     border-color: rgba(255, 255, 255, 0.1);
   }
   
   .dimension-input,
-  .select-enhanced {
+  .select-enhanced,
+  .number-selector {
     background: rgba(68, 80, 102, 0.8);
     color: white;
     border-color: rgba(255, 255, 255, 0.2);
   }
 }
 
-/* === FIX CENTRADO 3D SIN TOCAR JS =============================== */
-/* Variables del ancho del panel y separación */
-.app {
-  --panel-left: 2rem;     /* offset izquierdo actual del panel */
-  --panel-width: 360px;   /* ancho fijo del panel */
-  --panel-gap: 1.5rem;    /* espacio de respiro entre panel y canvas */
+/* Focus states for accessibility */
+.furniture-card:focus,
+.color-option:focus,
+.btn-nav:focus,
+.btn-floating:focus,
+.dimension-input:focus,
+.select-enhanced:focus,
+.switch:focus {
+  outline: 3px solid rgba(102, 126, 234, 0.5);
+  outline-offset: 2px;
 }
 
-/* Reservamos espacio a la izquierda dentro del viewer 
-   para que el canvas quede centrado en el área visible */
-.viewer {
-  position: relative; /* ya lo tienes, lo reforzamos */
-  padding-left: calc(var(--panel-left) + var(--panel-width) + var(--panel-gap));
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
 }
 
-/* El panel deja de “pisar” el centro útil porque su ancho es estable */
-.info-panel-enhanced {
-  width: var(--panel-width);
-  left: var(--panel-left);
-  right: auto;           /* evitamos que se estire */
-  max-width: none;       /* anulamos max-width previo */
-  min-width: 0;          /* anulamos min-width previo */
+/* Custom scrollbar */
+.modal-body::-webkit-scrollbar {
+  width: 4px;
 }
 
-/* Aseguramos que el canvas use SOLO el área restante 
-   (el padding-left ya “reserva” la columna del panel) */
-.viewer > canvas {
-  display: block;
-  width: 100% !important;
-  height: 100% !important;
-  box-sizing: border-box; /* respeta el padding del .viewer */
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
 }
 
-/* En pantallas pequeñas, volvemos al overlay para no perder espacio */
-@media (max-width: 1024px) {
+.modal-body::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 2px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Print styles */
+@media print {
+  .modal-backdrop,
+  .floating-controls,
+  .controls-help-enhanced {
+    display: none;
+  }
+  
   .viewer {
-    padding-left: 0;
+    height: 100vh;
   }
+  
   .info-panel-enhanced {
-    width: auto;
-    left: 1rem;
-    right: 1rem;
-    min-width: auto;
-    max-width: none;
+    position: static;
+    background: white;
+    color: black;
+    border: 1px solid black;
+    margin: 1rem;
   }
 }
-/* ================================================================ */
-
 </style>
