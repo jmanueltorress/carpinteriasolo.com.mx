@@ -4,7 +4,7 @@
     <div class="top-section">
       <h1>QUIENES SOMOS</h1>
       <p class="intro">
-SOLO es una carpintería dedicada a fabricar muebles y trabajos en madera a medida, combinando experiencia y calidad. Con más de 6 años de trayectoria, nos enfocamos en los detalles y en el uso de materiales duraderos para ofrecer resultados que superen tus expectativas. Además, buscamos soluciones que se ajusten a las necesidades y posibilidades de cada cliente. Transformamos la madera en piezas únicas para tu hogar o negocio.       </p>
+SOLO es una carpintería dedicada a fabricar muebles a medida, combinando experiencia y calidad. Con más de 6 años de trayectoria, nos enfocamos en los detalles y en el uso de materiales duraderos para ofrecer resultados que superen tus expectativas. Además, buscamos soluciones que se ajusten a las necesidades y posibilidades de cada cliente. Transformamos la madera en piezas únicas para tu hogar o negocio.       </p>
     </div>
 
     <!-- Imagen con Organigrama -->
