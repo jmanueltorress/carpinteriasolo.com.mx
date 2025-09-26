@@ -92,21 +92,135 @@ let colorSeleccionado = 'white'
 // ------------------------------
 function crearNano(ancho, alto, fondo) {
   const group = new THREE.Group()
-  const material = new THREE.MeshStandardMaterial({ color: colorSeleccionado })
 
-  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, fondo), material)
+  // --- Materiales ---
+  const matMueble = new THREE.MeshStandardMaterial({ 
+    color: 0x8B5A2B, // café
+    roughness: 0.6,
+    metalness: 0.1
+  })
+  const matManija = new THREE.MeshStandardMaterial({ 
+    color: 0xb0b0b0,
+    metalness: 0.7,
+    roughness: 0.3
+  })
+  const matPata = new THREE.MeshStandardMaterial({ 
+    color: 0x808080,
+    metalness: 0.8,
+    roughness: 0.3
+  })
+  const matLavabo = new THREE.MeshStandardMaterial({
+    color: 0xffffff, // blanco porcelana
+    roughness: 0.3,
+    metalness: 0.05,
+    side: THREE.DoubleSide
+  })
+  
+  // --- Cuerpo principal ---
+  const cuerpo = new THREE.Mesh(
+    new THREE.BoxGeometry(ancho, alto * 0.7, fondo), 
+    matMueble
+  )
+  cuerpo.position.y = -alto * 0.15
   group.add(cuerpo)
+  
+  // --- Cubierta superior ---
+  const grosorCubierta = 0.12
+  const cubierta = new THREE.Mesh(
+    new THREE.BoxGeometry(ancho, grosorCubierta, fondo), 
+    matMueble
+  )
+  cubierta.position.y = alto * 0.225
+  group.add(cubierta)
+  
+// --- Lavabo (cilindro) ---
+const radioLavabo = Math.min(ancho, fondo) * 0.35
+const alturaLavabo = 0.12
+const lavabo = new THREE.Mesh(
+  new THREE.CylinderGeometry(radioLavabo, radioLavabo * 0.95, alturaLavabo, 32, 1, true),
+  matLavabo
+)
+lavabo.position.set(0, cubierta.position.y + grosorCubierta/2 + alturaLavabo/2, 0)
+group.add(lavabo)
 
-  // dos puertas frontales
-  const puertaGeo = new THREE.BoxGeometry(ancho / 2 - 0.01, alto - 0.05, 0.02)
-  const puerta1 = new THREE.Mesh(puertaGeo, new THREE.MeshStandardMaterial({ color: 'gray' }))
-  puerta1.position.set(-ancho / 4, 0, fondo / 2 + 0.01)
+// --- Material grifo ---
+const matGrifo = new THREE.MeshStandardMaterial({
+  color: 0xcccccc, // gris metálico
+  metalness: 0.9,
+  roughness: 0.2
+})
+
+// --- Grifo metálico (base vertical) ---
+const baseGrifo = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.015, 0.015, 0.30, 16),
+  matGrifo
+)
+// Lo ponemos justo detrás del lavabo
+baseGrifo.position.set(0, cubierta.position.y + 0.12, -fondo/2 + 0.05)
+group.add(baseGrifo)
+
+// --- Tubo horizontal del grifo ---
+const tuboGrifo = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.01, 0.01, 0.21, 16),
+  matGrifo
+)
+tuboGrifo.rotation.x = Math.PI / 2
+tuboGrifo.position.set(0, cubierta.position.y + 0.25, -fondo/2 + 0.17)
+group.add(tuboGrifo)
+
+  // --- Puertas ---
+  const puerta1 = new THREE.Mesh(
+    new THREE.BoxGeometry(ancho / 2 - 0.01, alto * 0.4, 0.02),
+    matMueble
+  )
+  puerta1.position.set(-ancho / 4, alto * 0.05, fondo / 2 + 0.01)
+
   const puerta2 = puerta1.clone()
-  puerta2.position.set(ancho / 4, 0, fondo / 2 + 0.01)
+  puerta2.position.x = ancho / 4
+  
+  // --- Cajón inferior ---
+  const cajon = new THREE.Mesh(
+    new THREE.BoxGeometry(ancho - 0.02, alto * 0.25, 0.02),
+    matMueble
+  )
+  cajon.position.set(0, -alto * 0.275, fondo / 2 + 0.01)
+  
+  // --- Manijas ---
+  const manijaGeo = new THREE.BoxGeometry(0.008, 0.15, 0.012)
+  const manija1 = new THREE.Mesh(manijaGeo, matManija)
+  manija1.position.set(-ancho / 8, alto * 0.05, fondo / 2 + 0.025)
 
-  group.add(puerta1, puerta2)
+  const manija2 = manija1.clone()
+  manija2.position.x = ancho / 8
+
+  const manijaCajon = new THREE.Mesh(
+    new THREE.BoxGeometry(0.2, 0.008, 0.012),
+    matManija
+  )
+  manijaCajon.position.set(0, -alto * 0.275, fondo / 2 + 0.025)
+  
+  // --- Patas cilíndricas ---
+  const pataGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.08, 16)
+  const posicionesPatas = [
+    [-ancho/2 + 0.05, -alto/2 - 0.04,  fondo/2 - 0.05],
+    [ ancho/2 - 0.05, -alto/2 - 0.04,  fondo/2 - 0.05],
+    [-ancho/2 + 0.05, -alto/2 - 0.04, -fondo/2 + 0.05],
+    [ ancho/2 - 0.05, -alto/2 - 0.04, -fondo/2 + 0.05],
+  ]
+
+  posicionesPatas.forEach(pos => {
+    const pata = new THREE.Mesh(pataGeo, matPata)
+    pata.position.set(...pos)
+    group.add(pata)
+  })
+  
+  // --- Añadir todo ---
+  group.add(puerta1, puerta2, cajon)
+  group.add(manija1, manija2, manijaCajon)
+
   return group
 }
+
 
 function crearGreg(ancho, alto, fondo) {
   const group = new THREE.Group()
